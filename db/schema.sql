@@ -128,8 +128,14 @@ full_text as (
   where p.tsv @@ q.tsq
     and (filter_speaker is null or s.speaker = filter_speaker)
     and (filter_year is null or extract(year from s.published_at) = filter_year)
-  order by rank_ix
-  limit case when sort_by = 'relevance' then (match_count + match_offset) * 2 else 2000 end
+  -- Date sorts must pick by date *before* limiting, or a common word's
+  -- newest/oldest use could fall outside a relevance-ranked cutoff.
+  order by
+    case when sort_by = 'newest' then s.published_at end desc nulls last,
+    case when sort_by = 'oldest' then s.published_at end asc nulls last,
+    rank_ix
+  limit case when sort_by = 'relevance' then (match_count + match_offset) * 2
+             else match_count + match_offset end
 ),
 nearest as (
   select p.id, p.embedding <=> query_embedding as dist
@@ -178,6 +184,38 @@ order by
 limit match_count
 offset match_offset;
 $$;
+
+-- Swap in a sermon's passages in one transaction, so a failed write never
+-- leaves it with no passages or half of them. Ingest-only (service role).
+-- rows: [{"idx", "start_sec", "end_sec", "text", "embedding": "[...]" | null}, ...]
+create or replace function public.replace_passages(p_sermon_id bigint, p_rows jsonb)
+returns integer
+language plpgsql
+set search_path = public, extensions
+as $$
+declare
+  inserted integer;
+begin
+  delete from passages where sermon_id = p_sermon_id;
+  insert into passages (sermon_id, idx, start_sec, end_sec, text, embedding)
+  select p_sermon_id,
+         (r->>'idx')::int,
+         (r->>'start_sec')::real,
+         (r->>'end_sec')::real,
+         r->>'text',
+         (r->>'embedding')::extensions.vector
+  from jsonb_array_elements(p_rows) r;
+  get diagnostics inserted = row_count;
+  return inserted;
+end;
+$$;
+
+revoke execute on function public.replace_passages(bigint, jsonb) from public, anon, authenticated;
+do $$ begin
+  if exists (select 1 from pg_roles where rolname = 'service_role') then
+    grant execute on function public.replace_passages(bigint, jsonb) to service_role;
+  end if;
+end $$;
 
 -- Header numbers and filter dropdowns for the search page.
 create or replace function public.sermon_stats()

@@ -145,18 +145,15 @@ async function resolveFeedUrl(feed) {
 async function writePassages(sermonId, sentences) {
   const chunks = chunkSentences(sentences);
   const vectors = await embed(chunks.map((c) => c.text));
-  await db(`passages?sermon_id=eq.${sermonId}`, { method: "DELETE" });
   const rows = chunks.map((c, i) => ({
-    sermon_id: sermonId,
     idx: c.idx,
     start_sec: c.start_sec,
     end_sec: c.end_sec,
     text: c.text,
     embedding: JSON.stringify(vectors[i]),
   }));
-  for (let i = 0; i < rows.length; i += 200) {
-    await db("passages", { method: "POST", body: rows.slice(i, i + 200), prefer: "return=minimal" });
-  }
+  // One transaction: if this fails, the sermon keeps its previous passages.
+  await db("rpc/replace_passages", { method: "POST", body: { p_sermon_id: sermonId, p_rows: rows } });
   return chunks.length;
 }
 
@@ -240,7 +237,10 @@ async function main() {
   if (args.guid) {
     queue = await db(`sermons?${select}&guid=eq.${encodeURIComponent(args.guid)}`);
   } else {
-    const statuses = args["retry-errors"] ? "(pending,error,processing)" : "(pending)";
+    // 'processing' left over from a run that was killed mid-episode (timeout,
+    // cancellation) gets picked up again; the workflow's concurrency group means
+    // no other run can be working on it right now.
+    const statuses = args["retry-errors"] ? "(pending,processing,error)" : "(pending,processing)";
     queue = await db(`sermons?${select}&transcript_status=in.${statuses}&order=published_at.desc.nullslast&limit=${limit}`);
   }
 

@@ -275,8 +275,16 @@
   }
 
   async function search({ append = false } = {}) {
-    if (!state.q) return;
-    const seq = ++state.seq;
+    const seq = ++state.seq; // also cancels any search still in flight
+    if (!state.q) {
+      // Cleared search box: back to the starting view, not the old results.
+      state.results = []; state.done = false;
+      $("results").innerHTML = ""; $("answer-slot").innerHTML = ""; delete $("answer-slot").dataset.q;
+      $("status").className = "status"; $("status").textContent = "";
+      $("more").hidden = true; $("examples").hidden = false;
+      syncUrl();
+      return;
+    }
     $("examples").hidden = true;
     if (!append) { state.results = []; state.done = false; $("answer-slot").innerHTML = ""; delete $("answer-slot").dataset.q; }
     $("status").className = "status";
