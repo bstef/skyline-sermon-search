@@ -1,0 +1,42 @@
+name: Ingest sermons
+
+on:
+  schedule:
+    # Mondays 10:17 UTC (~6am Eastern) — after Sunday's episode is usually posted.
+    - cron: "17 10 * * 1"
+  workflow_dispatch:
+    inputs:
+      limit:
+        description: "Max sermons to transcribe this run (use a bigger number for the first backfill)"
+        default: "5"
+      args:
+        description: "Extra flags, e.g. --retry-errors, --dry-run, --rechunk, --guid <guid>"
+        default: ""
+
+concurrency:
+  group: ingest
+  cancel-in-progress: false
+
+jobs:
+  ingest:
+    runs-on: ubuntu-latest
+    timeout-minutes: 340
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Run ingest
+        env:
+          FEED_URL: ${{ vars.FEED_URL }}
+          DEFAULT_SPEAKER: ${{ vars.DEFAULT_SPEAKER }}
+          SERIES_PATTERN: ${{ vars.SERIES_PATTERN }}
+          DEEPGRAM_KEYTERMS: ${{ vars.DEEPGRAM_KEYTERMS }}
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          DEEPGRAM_API_KEY: ${{ secrets.DEEPGRAM_API_KEY }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          LIMIT: ${{ inputs.limit || '5' }}
+          EXTRA_ARGS: ${{ inputs.args }}
+        run: node ingest/ingest.mjs --limit "$LIMIT" $EXTRA_ARGS

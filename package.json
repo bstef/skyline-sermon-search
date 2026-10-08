@@ -1,0 +1,18 @@
+{
+  "name": "skyline-sermon-search",
+  "private": true,
+  "type": "module",
+  "description": "Search Skyline Church sermons by word, phrase, or idea and jump to the moment it was said.",
+  "scripts": {
+    "test": "node --test \"test/*.test.mjs\"",
+    "dev": "wrangler pages dev",
+    "ingest": "node ingest/ingest.mjs"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.132.1"
+  },
+  "devDependencies": {
+    "@electric-sql/pglite": "^0.5.8",
+    "@electric-sql/pglite-pgvector": "^0.0.9"
+  }
+}

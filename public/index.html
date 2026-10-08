@@ -1,0 +1,528 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Sermon Search · Skyline Church</title>
+<meta name="description" content="Search every Skyline Church sermon by word, phrase, or idea, and jump straight to the moment it was said.">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><circle cx='14' cy='14' r='9' fill='none' stroke='%232876FF' stroke-width='3.5'/><line x1='21' y1='21' x2='29' y2='29' stroke='%23B8925A' stroke-width='3.5' stroke-linecap='round'/></svg>">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,700&family=Source+Sans+3:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink:#1F2A24; --paper:#F6F3EC; --surface:#FFFFFF; --brass:#B8925A; --pew:#2876FF; --rust:#A6503C;
+    --line:#D8D1C0; --muted:#6F695C; --mark:rgba(184,146,90,.28); --pew-soft:rgba(40,118,255,.10);
+    --shadow:0 1px 2px rgba(31,42,36,.06),0 4px 16px rgba(31,42,36,.05);
+  }
+  @media (prefers-color-scheme: dark){
+    :root{
+      --ink:#EDE8DA; --paper:#1C1E21; --surface:#26282B; --brass:#D3AD78; --pew:#5B93FF; --rust:#DD8266;
+      --line:#3A3C40; --muted:#A3A5A9; --mark:rgba(211,173,120,.30); --pew-soft:rgba(91,147,255,.16);
+      --shadow:0 1px 2px rgba(0,0,0,.3);
+    }
+  }
+  *{box-sizing:border-box}
+  [hidden]{display:none !important}
+  html{-webkit-text-size-adjust:100%}
+  body{margin:0;background:var(--paper);color:var(--ink);font:17px/1.55 'Source Sans 3',system-ui,sans-serif;padding-bottom:120px}
+  .display{font-family:'Fraunces',Georgia,serif}
+  button,input,select{font:inherit;color:inherit}
+  button{cursor:pointer}
+  a{color:var(--pew)}
+  .wrap{max-width:860px;margin:0 auto;padding:0 20px}
+  :focus-visible{outline:2px solid var(--pew);outline-offset:2px}
+  .sr-only{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+
+  header{padding:40px 0 8px}
+  .eyebrow{font-size:13px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--brass);margin:0 0 6px}
+  h1{font-size:clamp(32px,6vw,48px);line-height:1.08;margin:0 0 10px;font-weight:600}
+  .lede{margin:0;color:var(--muted);max-width:620px}
+  body.embed header,body.embed footer{display:none}
+  body.embed .search{padding-top:20px}
+
+  .search{padding:24px 0 8px;position:sticky;top:0;background:var(--paper);z-index:5}
+  .searchbar{display:flex;gap:8px}
+  .searchbar input{flex:1;min-width:0;height:54px;border:1.5px solid var(--line);border-radius:10px;background:var(--surface);padding:0 18px;font-size:18px;box-shadow:var(--shadow)}
+  .searchbar input:focus{border-color:var(--pew);outline:none}
+  .btn{height:54px;border:none;border-radius:10px;background:var(--pew);color:#fff;padding:0 22px;font-weight:700}
+  .filters{display:flex;flex-wrap:wrap;gap:8px 14px;align-items:center;margin-top:12px;font-size:15px}
+  .seg{display:inline-flex;border:1px solid var(--line);border-radius:999px;background:var(--surface);padding:2px}
+  .seg button{border:none;background:none;border-radius:999px;padding:5px 14px;font-weight:600;color:var(--muted)}
+  .seg button[aria-pressed="true"]{background:var(--pew);color:#fff}
+  .filters select{height:34px;border:1px solid var(--line);border-radius:999px;background:var(--surface);padding:0 10px;max-width:46vw}
+  .filters label{display:inline-flex;align-items:center;gap:6px;color:var(--muted)}
+
+  .examples{margin:28px 0 0}
+  .examples p{color:var(--muted);margin:0 0 10px;font-size:15px}
+  .chips{display:flex;flex-wrap:wrap;gap:8px}
+  .chip{border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:6px 14px;font-size:15px}
+  .chip:hover{border-color:var(--pew)}
+
+  .status{min-height:24px;margin:16px 0 8px;color:var(--muted);font-size:15px}
+  .status.error{color:var(--rust)}
+
+  .answer{border:1px solid var(--line);border-left:4px solid var(--brass);background:var(--surface);border-radius:10px;padding:16px 18px;margin:8px 0 18px;box-shadow:var(--shadow)}
+  .answer h2{font-size:14px;letter-spacing:.06em;text-transform:uppercase;color:var(--brass);margin:0 0 8px}
+  .answer .body{white-space:pre-wrap}
+  .answer .note{font-size:13px;color:var(--muted);margin-top:10px}
+  .cite{border:none;background:var(--pew-soft);color:var(--pew);font-size:13px;font-weight:700;border-radius:6px;padding:0 6px;margin:0 1px;vertical-align:1px}
+  .ask{border:1px dashed var(--brass);background:none;color:var(--ink);border-radius:10px;padding:10px 16px;font-weight:600;margin:0 0 16px;width:100%;text-align:left}
+  .ask:hover{background:var(--surface)}
+
+  .sermon{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:16px 18px;margin:0 0 14px;box-shadow:var(--shadow)}
+  .sermon-head{display:flex;gap:14px;align-items:flex-start}
+  .sermon-head img{width:56px;height:56px;border-radius:8px;object-fit:cover;flex:none;background:var(--line)}
+  .sermon h3{font-size:20px;line-height:1.25;margin:0 0 2px;font-weight:600}
+  .meta{font-size:14px;color:var(--muted)}
+  .moments{list-style:none;margin:12px 0 0;padding:0}
+  .moment{display:flex;gap:12px;padding:10px 0;border-top:1px solid var(--line)}
+  .moment:first-child{border-top:none;padding-top:4px}
+  .time{flex:none;border:1px solid var(--line);background:var(--paper);border-radius:999px;height:32px;padding:0 12px;font-size:14px;font-weight:700;font-variant-numeric:tabular-nums;white-space:nowrap}
+  .time:hover,.time.playing{border-color:var(--pew);color:var(--pew)}
+  .excerpt{margin:4px 0 0;font-size:16px}
+  mark{background:var(--mark);color:inherit;border-radius:3px;padding:0 2px}
+  .moment-actions{display:flex;gap:14px;margin-top:4px;font-size:14px}
+  .link{border:none;background:none;padding:0;color:var(--pew);font-weight:600;font-size:14px}
+  .tag{display:inline-block;font-size:12px;font-weight:700;color:var(--muted);border:1px solid var(--line);border-radius:4px;padding:0 5px;margin-left:6px;vertical-align:1px}
+  .more{display:block;margin:6px auto 24px;border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:10px 22px;font-weight:600}
+
+  dialog{border:none;border-radius:14px;padding:0;width:min(760px,calc(100vw - 24px));max-height:calc(100vh - 40px);background:var(--surface);color:var(--ink);box-shadow:0 20px 60px rgba(0,0,0,.3)}
+  dialog::backdrop{background:rgba(20,22,24,.55)}
+  .dlg-head{position:sticky;top:0;background:var(--surface);border-bottom:1px solid var(--line);padding:16px 20px;display:flex;gap:12px;align-items:flex-start;z-index:1}
+  .dlg-head h2{font-size:22px;margin:0;line-height:1.2;font-weight:600}
+  .dlg-head .x{margin-left:auto;border:none;background:none;font-size:26px;line-height:1;color:var(--muted);padding:0 4px}
+  .dlg-body{padding:8px 20px 24px}
+  .para{display:flex;gap:12px;padding:10px 8px;border-radius:8px;margin:0 -8px}
+  .para p{margin:0}
+  .para.focus{background:var(--mark)}
+  .para.active{box-shadow:inset 3px 0 0 var(--pew)}
+  .disclaimer{font-size:13px;color:var(--muted);margin:10px 0 4px}
+
+  .player{position:fixed;left:0;right:0;bottom:0;background:var(--surface);border-top:1px solid var(--line);box-shadow:0 -4px 20px rgba(0,0,0,.08);z-index:20;transform:translateY(110%);transition:transform .2s}
+  .player.show{transform:none}
+  .player .wrap{display:flex;gap:14px;align-items:center;padding-top:10px;padding-bottom:10px}
+  .player-info{min-width:0;flex:0 1 260px}
+  .player-title{font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:15px}
+  .player audio{flex:1;min-width:0;height:40px}
+  .player .x{border:none;background:none;font-size:22px;color:var(--muted)}
+
+  footer{color:var(--muted);font-size:14px;padding:30px 0}
+  @media (max-width:600px){
+    body{font-size:16px}
+    header{padding-top:24px}
+    .btn{padding:0 16px}
+    .player .wrap{flex-wrap:wrap;gap:6px}
+    .player-info{flex:1 1 calc(100% - 40px)}
+    .player audio{flex:1 1 100%}
+    .sermon-head img{width:44px;height:44px}
+  }
+</style>
+</head>
+<body>
+<header class="wrap">
+  <p class="eyebrow">Skyline Church · Bloomfield, NJ</p>
+  <h1 class="display">Sermon Search</h1>
+  <p class="lede" id="lede">Search every sermon by word, phrase, or idea, and jump straight to the moment it was said.</p>
+</header>
+
+<section class="search" aria-label="Search sermons">
+  <form class="wrap" id="form" role="search">
+    <div class="searchbar">
+      <label for="q" class="sr-only">Search sermons</label>
+      <input id="q" type="search" autocomplete="off" enterkeyhint="search"
+             placeholder='Try “forgiveness” or “what does God say about worry”'>
+      <button class="btn" type="submit">Search</button>
+    </div>
+    <div class="filters">
+      <div class="seg" role="group" aria-label="Search type">
+        <button type="button" data-mode="smart" aria-pressed="true" title="Finds exact words and passages about the same idea">Smart</button>
+        <button type="button" data-mode="exact" aria-pressed="false" title="Only passages containing your exact words">Exact words</button>
+      </div>
+      <label>Sort
+        <select id="sort">
+          <option value="relevance">Best match</option>
+          <option value="newest">Newest first</option>
+          <option value="oldest">Oldest first</option>
+        </select>
+      </label>
+      <label id="speaker-wrap" hidden>Speaker <select id="speaker"><option value="">Anyone</option></select></label>
+      <label id="year-wrap" hidden>Year <select id="year"><option value="">Any year</option></select></label>
+    </div>
+  </form>
+</section>
+
+<main class="wrap">
+  <div class="examples" id="examples">
+    <p>Some places to start:</p>
+    <div class="chips">
+      <button class="chip" data-q="forgiveness">forgiveness</button>
+      <button class="chip" data-q='"mustard seed"'>"mustard seed"</button>
+      <button class="chip" data-q="how do I deal with anxiety">how do I deal with anxiety</button>
+      <button class="chip" data-q="the prodigal son">the prodigal son</button>
+      <button class="chip" data-q="serving your neighbor">serving your neighbor</button>
+    </div>
+  </div>
+  <div class="status" id="status" role="status" aria-live="polite"></div>
+  <div id="answer-slot"></div>
+  <div id="results"></div>
+  <button class="more" id="more" hidden>Show more results</button>
+</main>
+
+<footer class="wrap">
+  Transcripts are generated automatically and may contain small errors; the audio is always the final word.
+  <span id="footer-stats"></span>
+</footer>
+
+<dialog id="dlg" aria-labelledby="dlg-title">
+  <div class="dlg-head">
+    <div>
+      <h2 id="dlg-title" class="display"></h2>
+      <div class="meta" id="dlg-meta"></div>
+    </div>
+    <button class="x" id="dlg-close" aria-label="Close transcript">×</button>
+  </div>
+  <div class="dlg-body" id="dlg-body"></div>
+</dialog>
+
+<div class="player" id="player" aria-label="Audio player">
+  <div class="wrap">
+    <div class="player-info">
+      <div class="player-title" id="player-title"></div>
+      <div class="meta" id="player-meta"></div>
+    </div>
+    <audio id="audio" controls preload="none"></audio>
+    <button class="x" id="player-close" aria-label="Close player">×</button>
+  </div>
+</div>
+
+<script>
+(() => {
+  const $ = (id) => document.getElementById(id);
+  const params = new URLSearchParams(location.search);
+  if (params.get("embed") === "1") document.body.classList.add("embed");
+
+  const PAGE = 20;
+  const state = { q: "", mode: "smart", sort: "relevance", speaker: "", year: "", results: [], done: false, stats: null, seq: 0 };
+
+  // ── helpers ───────────────────────────────────────────────────────────
+  const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+  const fmtTime = (sec) => {
+    const s = Math.max(0, Math.floor(sec || 0)), h = Math.floor(s / 3600), m = Math.floor((s % 3600) / 60), r = s % 60;
+    return h ? `${h}:${String(m).padStart(2, "0")}:${String(r).padStart(2, "0")}` : `${m}:${String(r).padStart(2, "0")}`;
+  };
+  const fmtDate = (iso) => iso ? new Date(iso).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric", timeZone: "America/New_York" }) : "";
+  const meta = (s) => [fmtDate(s.published_at), s.speaker, s.series].filter(Boolean).map(esc).join(" · ");
+
+  // ts_headline marks matches as [[word]]; escape first, then turn markers into <mark>.
+  function highlight(text) {
+    let h = esc(text);
+    const opens = (h.match(/\[\[/g) || []).length, closes = (h.match(/\]\]/g) || []).length;
+    if (opens > closes) h += "]]".repeat(opens - closes);
+    return h.replace(/\[\[/g, "<mark>").replace(/\]\]/g, "</mark>");
+  }
+  // A ~50-word window around the first highlighted word (or the start, for idea-only matches).
+  function excerpt(snippet, words = 50) {
+    const toks = snippet.split(/\s+/);
+    if (toks.length <= words + 10) return { html: highlight(snippet), cut: false };
+    const first = Math.max(0, toks.findIndex((t) => t.includes("[[")));
+    const start = Math.max(0, Math.min(first - 15, toks.length - words));
+    let part = toks.slice(start, start + words).join(" ");
+    part = part.replace(/^[^\[]*?\]\]/, (m) => m.replace("]]", "")); // drop a dangling close at the cut
+    return { html: (start > 0 ? "… " : "") + highlight(part) + (start + words < toks.length ? " …" : ""), cut: true };
+  }
+
+  async function getJSON(url) {
+    const res = await fetch(url);
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(data.error || `Request failed (${res.status})`);
+    return data;
+  }
+
+  // ── stats + filters ───────────────────────────────────────────────────
+  async function loadStats() {
+    try {
+      const s = state.stats = await getJSON("/api/stats");
+      if (s.transcribed) {
+        const y1 = s.first_date && new Date(s.first_date).getFullYear(), y2 = s.last_date && new Date(s.last_date).getFullYear();
+        const range = y1 && y2 ? (y1 === y2 ? ` from ${y1}` : ` from ${y1} to ${y2}`) : "";
+        $("lede").textContent = `Search ${s.transcribed.toLocaleString()} sermons${range} by word, phrase, or idea, and jump straight to the moment it was said.`;
+        $("footer-stats").textContent = `${s.transcribed.toLocaleString()} of ${s.sermons.toLocaleString()} episodes transcribed.`;
+      }
+      if (s.speakers?.length > 1) {
+        $("speaker").insertAdjacentHTML("beforeend", s.speakers.map((x) => `<option>${esc(x.speaker)}</option>`).join(""));
+        $("speaker-wrap").hidden = false;
+      }
+      if (s.years?.length > 1) {
+        $("year").insertAdjacentHTML("beforeend", s.years.map((y) => `<option>${y}</option>`).join(""));
+        $("year-wrap").hidden = false;
+      }
+      $("speaker").value = state.speaker; $("year").value = state.year;
+      if (state.results.length) renderAll();
+    } catch { /* the page still works without stats */ }
+  }
+
+  // ── search ────────────────────────────────────────────────────────────
+  function syncUrl() {
+    const p = new URLSearchParams();
+    if (state.q) p.set("q", state.q);
+    if (state.mode !== "smart") p.set("mode", state.mode);
+    if (state.sort !== "relevance") p.set("sort", state.sort);
+    if (state.speaker) p.set("speaker", state.speaker);
+    if (state.year) p.set("year", state.year);
+    if (document.body.classList.contains("embed")) p.set("embed", "1");
+    history.replaceState(null, "", p.toString() ? `?${p}` : location.pathname);
+  }
+
+  async function search({ append = false } = {}) {
+    if (!state.q) return;
+    const seq = ++state.seq;
+    $("examples").hidden = true;
+    if (!append) { state.results = []; state.done = false; $("answer-slot").innerHTML = ""; delete $("answer-slot").dataset.q; }
+    $("status").className = "status";
+    $("status").textContent = append ? "Loading more…" : "Searching…";
+    syncUrl();
+    const p = new URLSearchParams({ q: state.q, mode: state.mode, sort: state.sort, limit: PAGE, offset: state.results.length });
+    if (state.speaker) p.set("speaker", state.speaker);
+    if (state.year) p.set("year", state.year);
+    try {
+      const data = await getJSON(`/api/search?${p}`);
+      if (seq !== state.seq) return; // a newer search started
+      state.results.push(...data.results);
+      state.done = data.results.length < PAGE;
+      renderAll();
+    } catch (err) {
+      if (seq !== state.seq) return;
+      $("status").className = "status error";
+      $("status").textContent = err.message;
+    }
+  }
+
+  function renderAll() {
+    const r = state.results;
+    const sermons = new Set(r.map((x) => x.sermon_id)).size;
+    const byDate = state.sort !== "relevance";
+    if (!r.length) {
+      $("status").textContent = state.mode === "exact" || byDate
+        ? "No exact matches. Try Smart search, or fewer words."
+        : "Nothing found. Try different words.";
+    } else {
+      $("status").textContent =
+        `${r.length}${state.done ? "" : "+"} moment${r.length === 1 ? "" : "s"} in ${sermons} sermon${sermons === 1 ? "" : "s"}` +
+        (byDate ? ` · exact-word matches, ${state.sort} first` : "");
+    }
+
+    // Group moments by sermon, keeping the order each sermon first appeared.
+    const groups = new Map();
+    r.forEach((x, i) => {
+      if (!groups.has(x.sermon_id)) groups.set(x.sermon_id, { s: x, moments: [] });
+      groups.get(x.sermon_id).moments.push({ ...x, rank: i });
+    });
+    $("results").innerHTML = [...groups.values()].map(({ s, moments }) => `
+      <article class="sermon">
+        <div class="sermon-head">
+          ${s.image_url ? `<img src="${esc(s.image_url)}" alt="" loading="lazy">` : ""}
+          <div>
+            <h3 class="display">${esc(s.title)}</h3>
+            <div class="meta">${meta(s)}</div>
+          </div>
+        </div>
+        <ul class="moments">${moments.sort((a, b) => byDate ? a.start_sec - b.start_sec : a.rank - b.rank).map(momentHtml).join("")}</ul>
+      </article>`).join("");
+    $("more").hidden = state.done || !r.length;
+    renderAsk();
+  }
+
+  function momentHtml(m) {
+    const ex = excerpt(m.snippet);
+    return `<li class="moment" id="m-${m.passage_id}">
+      <button class="time" data-play="${m.passage_id}" aria-label="Play from ${fmtTime(m.start_sec)}">▶ ${fmtTime(m.start_sec)}</button>
+      <div>
+        <p class="excerpt">${ex.html}${m.keyword_match ? "" : `<span class="tag" title="Matched by meaning rather than exact words">related</span>`}</p>
+        <div class="moment-actions">
+          <button class="link" data-transcript="${m.sermon_id}" data-at="${m.passage_id}">Read in transcript</button>
+          <button class="link" data-share="${m.sermon_id}" data-t="${Math.floor(m.start_sec)}">Copy link</button>
+        </div>
+      </div>
+    </li>`;
+  }
+
+  // ── AI summary (only if the server has it switched on) ────────────────
+  function renderAsk() {
+    const slot = $("answer-slot");
+    if (!state.stats?.answers_enabled || !state.results.length || slot.dataset.q === state.q) return;
+    slot.innerHTML = `<button class="ask" id="ask">✨ Summarize what was said about “${esc(state.q)}”</button>`;
+    $("ask").onclick = askSummary;
+  }
+
+  async function askSummary() {
+    const slot = $("answer-slot");
+    const cited = state.results.slice(0, 8);
+    slot.dataset.q = state.q;
+    slot.innerHTML = `<section class="answer" aria-live="polite"><h2>Summary</h2><div class="body">Reading the top passages…</div>
+      <div class="note">AI summary of the passages below. Tap a number to hear it in context.</div></section>`;
+    const body = slot.querySelector(".body");
+    let text = "";
+    const paint = () => {
+      body.innerHTML = esc(text).replace(/\[(\d+)\]/g, (all, n) => {
+        const m = cited[n - 1];
+        return m ? `<button class="cite" data-play="${m.passage_id}" title="${esc(m.title)} · ${fmtTime(m.start_sec)}">${n}</button>` : all;
+      });
+    };
+    try {
+      const res = await fetch("/api/answer", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ q: state.q, ids: cited.map((m) => m.passage_id) }),
+      });
+      if (!res.ok) throw new Error((await res.json().catch(() => ({}))).error || "Summary unavailable");
+      const reader = res.body.getReader(), dec = new TextDecoder();
+      let buf = "";
+      for (;;) {
+        const { value, done } = await reader.read();
+        if (done) break;
+        buf += dec.decode(value, { stream: true });
+        let nl;
+        while ((nl = buf.indexOf("\n")) >= 0) {
+          const line = buf.slice(0, nl); buf = buf.slice(nl + 1);
+          if (!line) continue;
+          const ev = JSON.parse(line);
+          if (ev.t) { text += ev.t; paint(); }
+          if (ev.error) throw new Error(ev.error);
+        }
+      }
+    } catch (err) {
+      body.textContent = err.message;
+    }
+  }
+
+  // ── audio ─────────────────────────────────────────────────────────────
+  const audio = $("audio");
+  let nowPlaying = null; // { sermon_id, title }
+
+  function play(s, startSec) {
+    $("player").classList.add("show");
+    $("player-title").textContent = s.title;
+    $("player-meta").innerHTML = meta(s);
+    const at = Math.max(0, startSec - 1.5);
+    if (nowPlaying?.sermon_id !== s.sermon_id) {
+      nowPlaying = { sermon_id: s.sermon_id, title: s.title };
+      audio.src = s.audio_url;
+      audio.addEventListener("loadedmetadata", () => { audio.currentTime = at; }, { once: true });
+      audio.load();
+    } else {
+      audio.currentTime = at;
+    }
+    audio.play().catch(() => {});
+  }
+
+  function findMoment(id) {
+    id = Number(id);
+    return state.results.find((x) => x.passage_id === id) || transcript.passages?.find((x) => x.passage_id === id);
+  }
+
+  // ── transcript dialog ─────────────────────────────────────────────────
+  const dlg = $("dlg");
+  const transcript = { sermon: null, passages: null };
+
+  async function openTranscript(sermonId, { passageId, t } = {}) {
+    $("dlg-title").textContent = "Loading…";
+    $("dlg-meta").textContent = "";
+    $("dlg-body").innerHTML = "";
+    if (!dlg.open) dlg.showModal();
+    try {
+      const { sermon, passages } = await getJSON(`/api/sermon?id=${encodeURIComponent(sermonId)}`);
+      const s = { ...sermon, sermon_id: sermon.id };
+      transcript.sermon = s;
+      transcript.passages = passages.map((p) => ({ ...s, passage_id: p.id, start_sec: p.start_sec, end_sec: p.end_sec }));
+      $("dlg-title").textContent = sermon.title;
+      $("dlg-meta").innerHTML = meta(sermon) + (sermon.episode_url ? ` · <a href="${esc(sermon.episode_url)}" target="_blank" rel="noopener">Episode page</a>` : "");
+      $("dlg-body").innerHTML = `<p class="disclaimer">Automatic transcript; tap a timestamp to listen.</p>` +
+        passages.map((p) => `<div class="para" id="p-${p.id}" data-start="${p.start_sec}" data-end="${p.end_sec}">
+          <button class="time" data-play="${p.id}">▶ ${fmtTime(p.start_sec)}</button><p>${esc(p.text)}</p></div>`).join("");
+      let target = passageId && $(`p-${passageId}`);
+      if (!target && t != null) {
+        const p = passages.find((p) => t >= p.start_sec && t < p.end_sec) || passages.find((p) => p.start_sec >= t);
+        target = p && $(`p-${p.id}`);
+      }
+      if (target) {
+        target.classList.add("focus");
+        requestAnimationFrame(() => target.scrollIntoView({ block: "center" }));
+      }
+      markActive();
+    } catch (err) {
+      $("dlg-title").textContent = "Couldn't load this transcript";
+      $("dlg-body").innerHTML = `<p>${esc(err.message)}</p>`;
+    }
+  }
+
+  // Follow along in the open transcript while its sermon plays.
+  function markActive() {
+    if (!dlg.open || !transcript.sermon || nowPlaying?.sermon_id !== transcript.sermon.sermon_id) return;
+    const t = audio.currentTime;
+    $("dlg-body").querySelectorAll(".para").forEach((el) => {
+      el.classList.toggle("active", t >= +el.dataset.start && t < +el.dataset.end);
+    });
+  }
+  audio.addEventListener("timeupdate", markActive);
+
+  // ── events ────────────────────────────────────────────────────────────
+  $("form").addEventListener("submit", (e) => {
+    e.preventDefault();
+    state.q = $("q").value.trim();
+    $("q").blur();
+    search();
+  });
+  document.querySelectorAll(".seg button").forEach((b) => b.addEventListener("click", () => {
+    state.mode = b.dataset.mode;
+    document.querySelectorAll(".seg button").forEach((x) => x.setAttribute("aria-pressed", String(x === b)));
+    search();
+  }));
+  $("sort").addEventListener("change", (e) => { state.sort = e.target.value; search(); });
+  $("speaker").addEventListener("change", (e) => { state.speaker = e.target.value; search(); });
+  $("year").addEventListener("change", (e) => { state.year = e.target.value; search(); });
+  $("more").addEventListener("click", () => search({ append: true }));
+  $("dlg-close").addEventListener("click", () => dlg.close());
+  dlg.addEventListener("click", (e) => { if (e.target === dlg) dlg.close(); });
+  $("player-close").addEventListener("click", () => { audio.pause(); $("player").classList.remove("show"); });
+
+  document.addEventListener("click", async (e) => {
+    const el = e.target.closest("[data-q],[data-play],[data-transcript],[data-share]");
+    if (!el) return;
+    if (el.dataset.q) {
+      $("q").value = state.q = el.dataset.q;
+      search();
+    } else if (el.dataset.play) {
+      const m = findMoment(el.dataset.play);
+      if (m) play(m, m.start_sec);
+    } else if (el.dataset.transcript) {
+      openTranscript(el.dataset.transcript, { passageId: el.dataset.at });
+    } else if (el.dataset.share) {
+      const url = `${location.origin}${location.pathname}?s=${el.dataset.share}&t=${el.dataset.t}`;
+      try { await navigator.clipboard.writeText(url); el.textContent = "Link copied"; }
+      catch { prompt("Copy this link:", url); }
+      setTimeout(() => (el.textContent = "Copy link"), 2000);
+    }
+  });
+
+  document.addEventListener("keydown", (e) => {
+    if (e.key === "/" && document.activeElement !== $("q") && !dlg.open) { e.preventDefault(); $("q").focus(); }
+  });
+
+  // ── start ─────────────────────────────────────────────────────────────
+  state.q = params.get("q") || "";
+  state.mode = params.get("mode") === "exact" ? "exact" : "smart";
+  state.sort = ["newest", "oldest"].includes(params.get("sort")) ? params.get("sort") : "relevance";
+  state.speaker = params.get("speaker") || "";
+  state.year = params.get("year") || "";
+  $("q").value = state.q;
+  $("sort").value = state.sort;
+  document.querySelectorAll(".seg button").forEach((x) => x.setAttribute("aria-pressed", String(x.dataset.mode === state.mode)));
+  loadStats();
+  if (state.q) search();
+  // Shared moment links: ?s=<sermon id>&t=<seconds>
+  if (params.get("s")) openTranscript(params.get("s"), { t: Number(params.get("t")) || 0 });
+})();
+</script>
+</body>
+</html>
