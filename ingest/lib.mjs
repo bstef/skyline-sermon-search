@@ -3,6 +3,18 @@
 
 // ── RSS ───────────────────────────────────────────────────────────────────
 
+/**
+ * FEED_URL may be the RSS feed itself, an Apple Podcasts link
+ * (https://podcasts.apple.com/us/podcast/name/id1480613754), or a bare Apple id.
+ * Returns the Apple id when it's one of the latter two, else null.
+ */
+export function applePodcastId(feed) {
+  const s = String(feed || "").trim();
+  if (/^\d{6,}$/.test(s)) return s;
+  const m = s.match(/^https?:\/\/(?:podcasts|itunes)\.apple\.com\/.*?\bid(\d{6,})/i);
+  return m ? m[1] : null;
+}
+
 const ENTITIES = { amp: "&", lt: "<", gt: ">", quot: '"', apos: "'", nbsp: " " };
 
 export function decodeXml(s) {

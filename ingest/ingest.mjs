@@ -9,13 +9,13 @@
 //                                               from its stored sentences (no Deepgram cost)
 //
 // Environment (see README → "Ingest"):
-//   FEED_URL, SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, DEEPGRAM_API_KEY,
+//   FEED_URL (RSS feed, or an Apple Podcasts link), SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, DEEPGRAM_API_KEY,
 //   CLOUDFLARE_ACCOUNT_ID, CLOUDFLARE_API_TOKEN
 //   optional: DEFAULT_SPEAKER, SERIES_PATTERN, DEEPGRAM_KEYTERMS, DEEPGRAM_MODEL
 
 import { parseArgs } from "node:util";
 import {
-  parseFeed, deepgramToSentences, chunkSentences, packSentences, unpackSentences,
+  applePodcastId, parseFeed, deepgramToSentences, chunkSentences, packSentences, unpackSentences,
 } from "./lib.mjs";
 
 const EMBED_MODEL = "@cf/baai/bge-base-en-v1.5";
@@ -126,6 +126,20 @@ async function embed(texts) {
   return out;
 }
 
+// ── Feed ──────────────────────────────────────────────────────────────────
+
+/** Turn an Apple Podcasts link/id into the show's RSS feed via Apple's public lookup API. */
+async function resolveFeedUrl(feed) {
+  const id = applePodcastId(feed);
+  if (!id) return feed.trim();
+  const res = await fetch(`https://itunes.apple.com/lookup?id=${id}&entity=podcast`);
+  if (!res.ok) throw new Error(`Apple lookup for podcast ${id} failed: ${res.status}`);
+  const show = (await res.json()).results?.find((r) => r.feedUrl);
+  if (!show) throw new Error(`Apple has no RSS feed listed for podcast ${id}; set FEED_URL to the feed itself.`);
+  console.log(`Apple Podcasts id ${id} → "${show.collectionName}" by ${show.artistName}`);
+  return show.feedUrl;
+}
+
 // ── Pipeline ──────────────────────────────────────────────────────────────
 
 async function writePassages(sermonId, sentences) {
@@ -191,8 +205,9 @@ async function main() {
   }
 
   need("FEED_URL");
-  console.log(`Fetching feed ${env.FEED_URL}`);
-  const feedRes = await fetch(env.FEED_URL, { headers: { "User-Agent": "SkylineSermonSearch/1.0" } });
+  const feedUrl = await resolveFeedUrl(env.FEED_URL);
+  console.log(`Fetching feed ${feedUrl}`);
+  const feedRes = await fetch(feedUrl, { headers: { "User-Agent": "SkylineSermonSearch/1.0" } });
   if (!feedRes.ok) throw new Error(`Feed fetch failed: ${feedRes.status}`);
   const episodes = parseFeed(await feedRes.text(), {
     defaultSpeaker: env.DEFAULT_SPEAKER || null,

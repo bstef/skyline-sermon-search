@@ -52,7 +52,7 @@ test/                      unit tests, SQL tests (PGlite + pgvector), API tests
 
 ## Setup
 
-You'll need free accounts at **Supabase**, **Cloudflare** and **Deepgram**, plus the podcast's **RSS feed URL**. The feed URL is in the podcast host's dashboard (Buzzsprout, Anchor/Spotify for Creators, Subsplash, etc.); whoever uploads the episodes each week will know where it is.
+You'll need free accounts at **Supabase**, **Cloudflare** and **Deepgram**. For the podcast itself, the Apple Podcasts link is enough: the ingest job asks Apple for the show's RSS feed each time it runs.
 
 ### 1. Database (Supabase)
 
@@ -90,7 +90,7 @@ Repo → **Settings → Secrets and variables → Actions**.
 
 | Name | Value |
 |---|---|
-| `FEED_URL` | the podcast RSS feed |
+| `FEED_URL` | `https://podcasts.apple.com/us/podcast/skyline-church-podcast/id1480613754`, or the RSS feed URL directly if you have it |
 | `DEFAULT_SPEAKER` | *(optional)* used when an episode doesn't name a speaker, e.g. `Pastor Chris` |
 | `DEEPGRAM_KEYTERMS` | *(optional)* comma-separated names/words to transcribe correctly, e.g. `Skyline,Bloomfield,Pastor Chris` |
 | `SERIES_PATTERN` | *(optional)* regex whose first group pulls a series name out of the title, e.g. `- (.+?) \(Part \d+\)` |

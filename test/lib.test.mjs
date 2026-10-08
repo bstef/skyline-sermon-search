@@ -2,7 +2,7 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import {
   parseFeed, parseDuration, detectSpeaker, deepgramToSentences, chunkSentences,
-  packSentences, unpackSentences, decodeXml,
+  packSentences, unpackSentences, decodeXml, applePodcastId,
 } from "../ingest/lib.mjs";
 
 const FEED = `<?xml version="1.0" encoding="UTF-8"?>
@@ -148,4 +148,13 @@ test("packSentences/unpackSentences round-trip", () => {
   const s = [{ start: 1.234, end: 2.5, text: "Hi." }];
   assert.deepEqual(unpackSentences(packSentences(s)), [{ start: 1.23, end: 2.5, text: "Hi." }]);
   assert.deepEqual(unpackSentences(null), []);
+});
+
+test("applePodcastId recognizes Apple Podcasts links and ids, not RSS feeds", () => {
+  assert.equal(applePodcastId("https://podcasts.apple.com/us/podcast/skyline-church-podcast/id1480613754"), "1480613754");
+  assert.equal(applePodcastId("https://podcasts.apple.com/us/podcast/skyline-church-podcast/id1480613754?i=1000700000000"), "1480613754");
+  assert.equal(applePodcastId("1480613754"), "1480613754");
+  assert.equal(applePodcastId("https://feeds.example.com/skyline/id1480613754.xml"), null);
+  assert.equal(applePodcastId("https://anchor.fm/s/abc123/podcast/rss"), null);
+  assert.equal(applePodcastId(""), null);
 });
