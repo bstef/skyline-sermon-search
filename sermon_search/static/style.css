@@ -474,3 +474,8 @@ header{gap:15px}
 .calendar-day[aria-pressed="true"],.calendar-day.outside-month[aria-pressed="true"]{background:var(--tile);box-shadow:inset 0 0 0 3px var(--primary)}
 .card.is-current,.calendar-sermon.is-current{box-shadow:inset 4px 0 var(--primary)}
 @media(max-width:420px){.search-options{gap:8px}.hero h1{font-size:38px}}
+
+/* Return to the full archive before the search results, or directly in the field. */
+#browse{margin:16px 0 0;width:fit-content;font-size:12px;font-weight:500}
+.search-box #clear-search{display:grid;place-items:center;flex-shrink:0;width:34px;height:34px;padding:0;background:transparent;color:var(--muted);border:1px solid var(--border-strong);border-radius:50%;font-size:22px;line-height:1}
+.search-box #clear-search:hover{background:var(--tile);color:var(--primary);filter:none}

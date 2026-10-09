@@ -27,12 +27,14 @@ function render(rows, searching=false) {
 }
 function browse() {
   if(controller) controller.abort();
+  $('query').value = ''; $('clear-search').hidden = true;
   $('section-title').textContent = 'The sermon library'; $('browse').hidden = true; $('notice').hidden = true; $('status').textContent = '';
   render(library.slice(0,visible)); $('more').hidden = visible >= library.length;
   const url = new URL(location.href); url.search = ''; history.replaceState(null,'',url);
 }
 async function search() {
-  const q = $('query').value.trim(); if(!q) return;
+  const q = $('query').value.trim(); if(!q) { browse(); return; }
+  $('clear-search').hidden = false;
   if(controller) controller.abort(); controller = new AbortController();
   const signal = controller.signal;
   const mode = document.querySelector('input[name=mode]:checked').value;
@@ -40,6 +42,7 @@ async function search() {
   $('results').replaceChildren();
   try {
     const data = await api(`/api/search?q=${encodeURIComponent(q)}&mode=${mode}`,signal);
+    if(signal.aborted) return;
     $('status').textContent = `${data.results.length} passages · ${data.mode === 'hybrid' ? 'Words & meaning' : 'Keyword search'} · ${data.elapsed_ms} ms`;
     $('notice').textContent = data.notice || ''; $('notice').hidden = !data.notice;
     render(data.results,true);
@@ -55,7 +58,12 @@ window.SkylinePlayer.registerReveal((episode, entryId) => {
 });
 $('search-form').addEventListener('submit',e=>{ e.preventDefault(); search(); });
 document.querySelectorAll('[data-query]').forEach(e=>e.addEventListener('click',()=>{ $('query').value=e.dataset.query; search(); }));
-$('browse').addEventListener('click',browse);
+$('query').addEventListener('input',()=>{
+  $('clear-search').hidden = !$('query').value;
+  if(!$('query').value.trim()) browse();
+});
+$('clear-search').addEventListener('click',()=>{ browse(); $('query').focus(); });
+$('browse').addEventListener('click',()=>{ browse(); $('query').focus(); });
 $('more').addEventListener('click',()=>{visible+=12;render(library.slice(0,visible));$('more').hidden=visible>=library.length;});
 (async()=>{
   try {
