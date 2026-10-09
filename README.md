@@ -2,6 +2,56 @@
 
 A first working foundation for searching Skyline Church in Bloomfield, New Jersey. Search saved sermon passages, read their context, and start the original podcast audio at the passage timestamp.
 
+## Cloudflare Workers deployment
+
+The website and read-only APIs run on Workers with Static Assets and D1. The Python tools remain the manual transcription / ingestion environment; they are not run inside Workers. Deployments never download or transcribe audio, call Groq, generate embeddings, or install a schedule.
+
+In Cloudflare Workers Builds, connect this repository and use:
+
+- Root directory: `/`
+- Build command: `npm run check` (optional)
+- Deploy command: `npm run deploy`
+
+The deploy command builds the existing frontend, deploys the Worker, and applies D1 migrations. The initial migration imports a public metadata snapshot of 481 episodes, including dates and audio URLs. It contains no transcripts or keys. The D1 binding is `DB`; Wrangler can provision it automatically for a new account. A build token needs permission to deploy Workers and edit D1.
+
+For local development with the Cloudflare runtime (Node.js 22.18+):
+
+```sh
+npm ci
+npm run db:local
+npm run dev
+```
+
+Open http://localhost:8787. The database is simulated locally; local migrations do not affect production. For authenticated CLI deployment, run `npx wrangler login` and then `npm run deploy`. D1 stores sermon data across deploys. Schema changes belong in new numbered migrations; do not edit already-applied migrations.
+
+### Publish newly imported sermons
+
+After explicitly syncing or transcribing with the Python CLI below, export the canonical local archive and publish it to D1:
+
+```sh
+python -m sermon_search.cli export-cloudflare data/cloudflare-import.sql
+npx wrangler d1 execute DB --remote --file data/cloudflare-import.sql
+```
+
+Export makes no AI calls. It updates episode metadata and replaces passages only for episodes with actual local transcripts. A metadata-only export preserves remote transcripts. Keep using the same canonical local database so passage IDs remain stable; combining exports from independent databases is not supported. Review the local transcript before publishing it. Audio stays on the podcast host.
+
+### Optional contextual search on Workers
+
+Keyword search is ready once transcripts are published. For contextual search, explicitly create a Vectorize index with 512 dimensions and cosine distance, add a `VECTOR_INDEX` binding in `wrangler.jsonc`, and set an `OPENAI_API_KEY` Worker secret with `wrangler secret put`. Never put Groq or OpenAI keys in frontend files or Git.
+
+```sh
+npx wrangler vectorize create skyline-sermon-passages --dimensions 512 --metric cosine
+# Add: "vectorize": [{ "binding": "VECTOR_INDEX", "index_name": "skyline-sermon-passages" }]
+# After explicitly generating local embeddings and exporting:
+npx wrangler vectorize upsert skyline-sermon-passages --file data/cloudflare-import.ndjson
+npx wrangler secret put OPENAI_API_KEY
+npm run deploy
+```
+
+The export writes a companion NDJSON file of existing embeddings; it never generates them. Upsert again after transcript changes. Vector IDs include a content fingerprint so old vectors cannot match replaced text. D1 remains the source of passage text and timestamps; unmatched/stale vector IDs are ignored. Until the binding, embeddings, and key are configured, smart mode displays an honest keyword fallback. Semantic search merges keyword and vector ranks and removes overlapping hits. Query embeddings make paid calls; configure rate limits / spend controls before enabling publicly. The Worker has no public transcription or admin endpoints.
+
+References: [Workers Static Assets](https://developers.cloudflare.com/workers/static-assets/), [D1 migrations](https://developers.cloudflare.com/d1/reference/migrations/).
+
 ## Run locally
 
 Python 3.11+ is required. No AI key is needed to browse the podcast or search imported transcripts with keywords.
@@ -79,7 +129,7 @@ Reference: [OpenAI embeddings](https://developers.openai.com/api/docs/guides/emb
 
 ## Design
 
-- FastAPI serves a responsive web interface and read-only APIs.
+- Workers serves the deployed frontend and read-only APIs with D1 storage. FastAPI remains available for local Python development.
 - The header uses the blue–green color logos with black/white lettering from [skylinebrand](https://github.com/bstef/skylinebrand), bundled locally under `sermon_search/static/`. Instrument Sans and Instrument Serif are self-hosted from the same repository, with their OFL licenses included. Both themes use blue, teal, and green tones derived from the logo (blue `#27aae1`, green `#39b54a`), with darker or lighter variants for readable text.
 - A sun/moon toggle switches light and dark themes. The initial theme follows the device preference; a user choice is saved locally and applied before the page paints.
 - SQLite FTS5 indexes transcript passages for fast keyword retrieval.
@@ -92,7 +142,7 @@ Reference: [OpenAI embeddings](https://developers.openai.com/api/docs/guides/emb
 
 ## Hosting and church website integration
 
-The app can run on a separate site or a church subdomain. Deploy the Python service behind HTTPS with persistent storage for `data/sermons.sqlite3`; ephemeral hosting will lose the index. A container definition is included. Configure `SERMON_DB=/data/sermons.sqlite3` with a persistent `/data` volume.
+The app can run on a Workers URL or a church subdomain. Cloudflare deployment uses durable D1 storage as described above. For alternative Python hosting, a container definition is included; configure `SERMON_DB=/data/sermons.sqlite3` with a persistent `/data` volume.
 
 Start with a separate site linked from the church's Watch page. An iframe is another option if the church's Nucleus page editor permits it; that integration has not been checked. A same-domain `/sermon-search` URL needs reverse-proxy support and base-path handling, which this foundation does not include.
 
@@ -102,6 +152,9 @@ Before public use, add gateway rate limits and a concurrency/spend cap for the p
 
 ```sh
 python -m unittest discover -s tests -v
+npm run check
+npm run test:worker
+npx wrangler deploy --dry-run
 ```
 
 The tests cover idempotent feed sync, accurate timestamp retrieval, transcript replacement, invalid input, chunk overlap, semantic-only matches, and provider failure fallback. Semantic tests use mock vectors; they do not establish real model relevance or provider availability.

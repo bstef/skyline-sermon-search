@@ -1,0 +1,34 @@
+{
+	"$schema": "./node_modules/wrangler/config-schema.json",
+	"name": "skyline-sermon-search",
+	"main": "worker/index.ts",
+	"compatibility_date": "2026-10-08",
+	"compatibility_flags": [
+		"nodejs_compat"
+	],
+	"workers_dev": true,
+	"build": {
+		"command": "npm run build"
+	},
+	"assets": {
+		"directory": "./dist",
+		"binding": "ASSETS",
+		"run_worker_first": [
+			"/api/*"
+		],
+		"html_handling": "drop-trailing-slash",
+		"not_found_handling": "none"
+	},
+	"d1_databases": [
+		{
+			"binding": "DB",
+			"database_name": "skyline-sermons",
+			"migrations_dir": "migrations",
+			"database_id": "f4255a78-8e8e-4e2f-acfb-8e6878f7ad97"
+		}
+	],
+	"observability": {
+		"enabled": true,
+		"head_sampling_rate": 1
+	}
+}

@@ -17,9 +17,14 @@ def main():
     trans = commands.add_parser('transcribe',help='Paid API: transcribe one episode, with resumable chunk cache')
     trans.add_argument('episode_id')
     trans.add_argument('--dry-run', action='store_true', help='Show Groq configuration without downloads or API calls')
+    export = commands.add_parser('export-cloudflare',help='Export local archive for D1 and Vectorize; no AI calls')
+    export.add_argument('file',type=Path)
     args = parser.parse_args()
     core.init()
-    if args.command=='sync': print(f'Imported {core.sync()} podcast episodes.')
+    if args.command=='export-cloudflare':
+        from .cloudflare import export_archive
+        print(json.dumps(export_archive(args.file),indent=2))
+    elif args.command=='sync': print(f'Imported {core.sync()} podcast episodes.')
     elif args.command=='list':
         for e in core.episodes(): print(e['id'],e['date'],f"[{e['passages']} passages]",e['title'])
     elif args.command=='import': print(f"Indexed {core.import_transcript(args.episode_id,json.loads(args.file.read_text())['segments'])} passages.")
