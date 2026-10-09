@@ -479,3 +479,9 @@ header{gap:15px}
 #browse{margin:16px 0 0;width:fit-content;font-size:12px;font-weight:500}
 .search-box #clear-search{display:grid;place-items:center;flex-shrink:0;width:34px;height:34px;padding:0;background:transparent;color:var(--muted);border:1px solid var(--border-strong);border-radius:50%;font-size:22px;line-height:1}
 .search-box #clear-search:hover{background:var(--tile);color:var(--primary);filter:none}
+
+/* Echo names the sermon app; the church footer retains its original logo. */
+.app-brand{gap:12px;flex-shrink:0}
+.brand-echo{font-family:'Instrument Serif',Georgia,serif;font-style:italic;font-size:42px;line-height:1;color:var(--primary);letter-spacing:-1px}
+@media(max-width:640px){.app-brand{gap:8px}.app-brand .brand-logo{width:125px}.brand-echo{font-size:32px}header{gap:12px}.header-actions{gap:10px}}
+@media(max-width:360px){.app-brand .brand-logo{width:105px}.brand-echo{font-size:28px}.app-brand{gap:6px}.header-actions{gap:8px}}
