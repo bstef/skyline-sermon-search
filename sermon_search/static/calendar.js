@@ -14,7 +14,7 @@ let selected = dateKey(today), focus = fromKey(selected), episodes = [], byDate 
 const params = new URLSearchParams(location.search);
 let savedView;
 try { savedView=localStorage.getItem('skyline-calendar-view'); } catch {}
-if(['month','week','agenda'].includes(params.get('view') || savedView)) view=params.get('view') || savedView;
+if(['month','week','agenda','year'].includes(params.get('view') || savedView)) view=params.get('view') || savedView;
 if(fromKey(params.get('date'))) { selected=params.get('date'); focus=fromKey(selected); }
 function rowsOn(key) { return byDate.get(key) || []; }
 function displayTitle(e) { return e.title.replace(/^\d{1,2}\/\d{1,2}\/\d{2,4}\s*[-–:]\s*/, ''); }
@@ -38,7 +38,7 @@ function renderDetails() {
   if(!rows.length) $('day-sermons').append(make('p','No sermon is listed for this date. Select a marked date to listen.','empty'));
 }
 function selectDate(key) {
-  selected=key; focus=fromKey(key); render();
+  selected=key; focus=fromKey(key); if(view==='year')view='month'; render();
   document.querySelector(`.calendar-day[data-date="${selected}"]`)?.focus({preventScroll:true});
 }
 function dateButton(date, outside=false) {
@@ -56,6 +56,7 @@ function dateButton(date, outside=false) {
   button.addEventListener('click',()=>selectDate(key));return button;
 }
 function range() {
+  if(view==='year')return [new Date(focus.getFullYear(),0,1,12),new Date(focus.getFullYear()+1,0,1,12)];
   if(view==='week') { const start=addDays(focus,-focus.getDay());return [start,addDays(start,7)]; }
   return [new Date(focus.getFullYear(),focus.getMonth(),1,12),new Date(focus.getFullYear(),focus.getMonth()+1,1,12)];
 }
@@ -92,23 +93,56 @@ function renderAgenda(start,end) {
     sermons.forEach(e=>section.append(sermonCard(e)));$('calendar-content').append(section);
   }
 }
+function renderYear() {
+  const grid=make('div',undefined,'year-calendar');
+  for(let month=0;month<12;month++) {
+    const start=new Date(focus.getFullYear(),month,1,12), end=new Date(focus.getFullYear(),month+1,1,12);
+    const rows=episodes.filter(e=>e.date>=dateKey(start) && e.date<dateKey(end));
+    const section=make('section',undefined,'year-month');
+    const heading=make('h3'), open=make('button',start.toLocaleDateString('en-US',{month:'long'}),'year-month-link');
+    open.setAttribute('aria-label',`Open ${start.toLocaleDateString('en-US',{month:'long',year:'numeric'})} · ${rows.length} sermons`);
+    open.addEventListener('click',()=>{view='month';selectDate(rows.length ? rows[rows.length-1].date : dateKey(start));});heading.append(open);section.append(heading);
+    const table=make('table');table.setAttribute('aria-label',start.toLocaleDateString('en-US',{month:'long',year:'numeric'}));
+    const head=make('thead'), header=make('tr');
+    ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'].forEach(day=>{const th=make('th',day);th.scope='col';header.append(th);});head.append(header);
+    const body=make('tbody'), gridStart=addDays(start,-start.getDay());
+    const days=Math.ceil((start.getDay()+new Date(focus.getFullYear(),month+1,0).getDate())/7)*7;
+    for(let n=0;n<days;n+=7) {
+      const row=make('tr');
+      for(let i=0;i<7;i++) {
+        const date=addDays(gridStart,n+i),cell=make('td');
+        if(date.getMonth()===month){const button=dateButton(date);if(rowsOn(dateKey(date)).length)button.classList.add('has-sermon');cell.append(button);}
+        row.append(cell);
+      }
+      body.append(row);
+    }
+    table.append(head,body);section.append(table,make('p',`${rows.length} ${rows.length===1?'sermon':'sermons'}`,'meta'));grid.append(section);
+  }
+  $('calendar-content').append(grid);
+}
+function renderYears() {
+  const years=episodes.map(e=>Number(e.date.slice(0,4))).filter(Number.isFinite);
+  const first=Math.min(focus.getFullYear(),today.getFullYear(),...years),last=Math.max(focus.getFullYear(),today.getFullYear(),...years);
+  const options=[];for(let year=last;year>=first;year--){const option=make('option',year);option.value=String(year);options.push(option);}
+  $('calendar-year').replaceChildren(...options);$('calendar-year').value=String(focus.getFullYear());
+}
 function render() {
   const [start,end]=range();
-  $('period-title').textContent=view==='week' ? `${start.toLocaleDateString('en-US',{month:'short',day:'numeric'})} – ${addDays(end,-1).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'})}` : focus.toLocaleDateString('en-US',{month:'long',year:'numeric'});
-  $('jump-date').value=selected;
+  $('period-title').textContent=view==='year' ? String(focus.getFullYear()) : view==='week' ? `${start.toLocaleDateString('en-US',{month:'short',day:'numeric'})} – ${addDays(end,-1).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'})}` : focus.toLocaleDateString('en-US',{month:'long',year:'numeric'});
+  $('jump-date').value=selected;renderYears();
   document.querySelectorAll('[data-view]').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.view===view)));
   const count=episodes.filter(e=>e.date>=dateKey(start) && e.date<dateKey(end)).length;
-  $('calendar-count').textContent=`${count} ${count===1?'sermon':'sermons'} this ${view==='week'?'week':'month'}`;
+  $('calendar-count').textContent=`${count} ${count===1?'sermon':'sermons'} this ${view==='year'?'year':view==='week'?'week':'month'}`;
   $('calendar-content').replaceChildren();
-  if(view==='month')renderMonth(start);else if(view==='week')renderWeek(start);else renderAgenda(start,end);
-  $('day-details').hidden=view==='agenda';if(view!=='agenda')renderDetails();
+  if(view==='year')renderYear();else if(view==='month')renderMonth(start);else if(view==='week')renderWeek(start);else renderAgenda(start,end);
+  $('day-details').hidden=['agenda','year'].includes(view);if(!$('day-details').hidden)renderDetails();
   $('previous').disabled=start.getFullYear()<=1900 && start.getMonth()===0;
   $('next').disabled=end.getFullYear()>2100;
   window.SkylinePlayer.refresh();
   const url=new URL(location.href);url.searchParams.set('date',selected);url.searchParams.set('view',view);history.replaceState(null,'',url);
 }
 function move(n) {
-  const target=view==='week' ? addDays(focus,n*7) : new Date(focus.getFullYear(),focus.getMonth()+n,1,12);
+  const target=view==='year' ? new Date(focus.getFullYear()+n,0,1,12) : view==='week' ? addDays(focus,n*7) : new Date(focus.getFullYear(),focus.getMonth()+n,1,12);
   if(target.getFullYear()<1900 || target.getFullYear()>2100)return;
   selected=dateKey(target);focus=target;render();
 }
@@ -118,6 +152,11 @@ window.SkylinePlayer.registerReveal(episode=>{
 });
 $('previous').addEventListener('click',()=>move(-1));$('next').addEventListener('click',()=>move(1));
 $('today').addEventListener('click',()=>selectDate(dateKey(today)));
+$('calendar-year').addEventListener('change',e=>{
+  const year=Number(e.target.value);if(!Number.isInteger(year)||year<1900||year>2100)return;
+  const day=Math.min(focus.getDate(),new Date(year,focus.getMonth()+1,0,12).getDate());
+  focus=new Date(year,focus.getMonth(),day,12);selected=dateKey(focus);render();
+});
 $('jump-date').addEventListener('change',e=>{if(fromKey(e.target.value))selectDate(e.target.value);});
 document.querySelectorAll('[data-view]').forEach(b=>b.addEventListener('click',()=>{view=b.dataset.view;try{localStorage.setItem('skyline-calendar-view',view);}catch{}render();}));
 (async()=>{

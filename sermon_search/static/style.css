@@ -488,3 +488,22 @@ header{gap:15px}
 .brand-echo{font-family:'Instrument Serif',Georgia,serif;font-style:italic;font-size:42px;line-height:1;color:var(--primary);letter-spacing:-1px}
 @media(max-width:640px){.app-brand{gap:8px}.app-brand .brand-logo{width:125px}.brand-echo{font-size:32px}header{gap:12px}.header-actions{gap:10px}}
 @media(max-width:360px){.app-brand .brand-logo{width:105px}.brand-echo{font-size:28px}.app-brand{gap:6px}.header-actions{gap:8px}}
+
+.jump-label select{border:1px solid var(--border-strong);background:var(--surface);color:var(--ink);padding:8px;border-radius:6px;font:inherit;font-size:12px}
+.calendar-controls{flex-wrap:wrap}
+.year-calendar{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:20px}
+.year-month{padding:16px;border:1px solid var(--border-strong);border-radius:12px;background:var(--surface)}
+.year-month h3{margin:0 0 12px}
+.year-month-link{font-family:'Instrument Serif',Georgia,serif;font-size:24px;padding:0;border:0;background:transparent;color:var(--primary)}
+.year-month-link:hover{text-decoration:underline;text-underline-offset:4px;filter:none}
+.year-month table{width:100%;table-layout:fixed;border-collapse:collapse}
+.year-month th{font-size:9px;font-weight:500;color:var(--muted);padding-bottom:7px}
+.year-month td{height:35px;padding:1px}
+.year-month .calendar-day{position:relative;min-height:32px;height:32px;padding:2px;align-items:center;justify-content:center;border-radius:5px;gap:0}
+.year-month .day-number{font-size:11px;width:23px;height:23px}
+.year-month .day-marker,.year-month .day-event{display:none}
+.year-month .has-sermon{background:var(--tile);color:var(--primary);font-weight:600}
+.year-month .has-sermon::after{content:'';position:absolute;bottom:2px;width:3px;height:3px;border-radius:50%;background:var(--primary)}
+.year-month .meta{margin:10px 0 0}
+@media(max-width:800px){.year-calendar{grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}}
+@media(max-width:480px){.year-calendar{grid-template-columns:1fr}.calendar-controls{gap:12px}.calendar-subtoolbar{gap:12px}}
