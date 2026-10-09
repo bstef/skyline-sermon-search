@@ -19,6 +19,10 @@ app.mount('/static', StaticFiles(directory=static), name='static')
 def home():
     return FileResponse(static / 'index.html')
 
+@app.get('/calendar')
+def calendar():
+    return FileResponse(static / 'calendar.html')
+
 @app.get('/api/stats')
 def stats():
     return core.stats()

@@ -62,6 +62,7 @@ References: [timestamped transcription](https://developers.openai.com/api/docs/g
 - Metadata and transcripts are separate: descriptions are never passed off as sermon quotations.
 - A single HTML audio player seeks in the original podcast file. Playback and seeking depend on the podcast host's browser/range support.
 - Search links retain query and mode in the URL.
+- `/calendar` shows month, week, and agenda views with date navigation, a date picker, sermon details, and playback. Calendar dates come from the sermon title when it starts with a valid M/D/YYYY date, falling back to podcast publication. The chosen view is saved locally, and date/view links can be shared.
 
 ## Hosting and church website integration
 

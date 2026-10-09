@@ -20,6 +20,9 @@ class ApiTests(unittest.TestCase):
             self.assertEqual(client.get('/api/search',params={'q':'x'*301}).status_code,422)
             self.assertEqual(client.get('/api/search',params={'q':'peace','mode':'bad'}).status_code,422)
             self.assertEqual(client.get('/').status_code,200)
+            self.assertEqual(client.get('/calendar').status_code,200)
+            self.assertEqual(client.get('/static/calendar.js').status_code,200)
+            self.assertEqual(client.get('/static/player.js').status_code,200)
             self.assertEqual(client.get('/static/app.js').status_code,200)
             self.assertEqual(client.post('/api/sync').status_code,404)
 

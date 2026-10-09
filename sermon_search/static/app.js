@@ -3,15 +3,7 @@ let library = [], visible = 12, controller;
 const clock = s => `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, '0')}`;
 function node(tag, text, cls) { const e = document.createElement(tag); if(text !== undefined) e.textContent = text; if(cls) e.className = cls; return e; }
 async function api(url, signal) { const r = await fetch(url, {signal}); if(!r.ok) throw new Error('The library could not be loaded. Please try again.'); return r.json(); }
-function listen(e, start=0) {
-  const player = $('player'); player.pause();
-  $('player-panel').hidden = false; $('player-title').textContent = e.title;
-  $('player-status').textContent = start ? `Starting at ${clock(start)}` : '';
-  player.src = `${e.audio_url}#t=${start}`;
-  player.onloadedmetadata = async () => { try { player.currentTime = start; await player.play(); } catch { $('player-status').textContent = 'Press play to listen. Seeking depends on the podcast host.'; } };
-  player.onerror = () => { $('player-status').textContent = 'Audio could not be loaded from the podcast host.'; };
-  player.load();
-}
+const listen = window.SkylinePlayer.listen;
 function render(rows, searching=false) {
   $('results').replaceChildren();
   rows.forEach(e => {
@@ -53,7 +45,6 @@ $('search-form').addEventListener('submit',e=>{ e.preventDefault(); search(); })
 document.querySelectorAll('[data-query]').forEach(e=>e.addEventListener('click',()=>{ $('query').value=e.dataset.query; search(); }));
 $('browse').addEventListener('click',browse);
 $('more').addEventListener('click',()=>{visible+=12;render(library.slice(0,visible));$('more').hidden=visible>=library.length;});
-$('close-player').addEventListener('click',()=>{$('player').pause();$('player').removeAttribute('src');$('player').load();$('player-panel').hidden=true;});
 (async()=>{
   try {
     const [stats, episodes] = await Promise.all([api('/api/stats'),api('/api/episodes')]);

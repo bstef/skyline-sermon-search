@@ -337,3 +337,76 @@ header{gap:15px}
 .header-actions{gap:8px}
 }
 
+
+/* Archive navigation and calendar use the same brand tokens in both themes. */
+.site-nav{max-width:1050px;margin:18px auto 0;padding:0 32px;display:flex;gap:8px}
+.site-nav a{font-size:13px;color:var(--muted);padding:10px 16px;border-radius:24px}
+.site-nav a[aria-current="page"]{color:var(--primary);background:var(--tile)}
+.calendar-intro{margin:50px 0 36px}
+.calendar-intro h1{font-size:54px;line-height:1.1;margin:15px 0}
+.calendar-intro p{font-size:14px;color:var(--muted);line-height:1.7}
+.calendar-toolbar,.calendar-subtoolbar,.calendar-controls,.period-navigation{display:flex;align-items:center;gap:14px}
+.calendar-toolbar,.calendar-subtoolbar{justify-content:space-between;flex-wrap:wrap}
+.calendar-subtoolbar{margin:22px 0 12px}
+.period-navigation h2{margin:0;font-size:32px;min-width:210px;text-align:center}
+.calendar-toolbar button,.view-switcher button,.calendar-listen{border:1px solid var(--border-strong);background:var(--surface);color:var(--primary);border-radius:8px;padding:10px 14px;font:inherit;font-size:12px}
+.calendar-toolbar button:disabled{opacity:.4;cursor:default}
+.jump-label{font-size:10px;display:flex;flex-direction:column;gap:4px;color:var(--muted)}
+.jump-label input{border:1px solid var(--border-strong);background:var(--surface);color:var(--ink);padding:8px;border-radius:6px;font:inherit;font-size:12px;max-width:155px}
+.view-switcher{display:flex;gap:4px;background:var(--tile);padding:4px;border-radius:10px}
+.view-switcher button{background:transparent;border-color:transparent;color:var(--muted)}
+.view-switcher button[aria-pressed="true"]{background:var(--surface);color:var(--primary);border-color:var(--line)}
+#calendar-count,#calendar-status{font-size:11px;color:var(--muted);line-height:1.6}
+.month-calendar{width:100%;table-layout:fixed;border-spacing:0;border-collapse:collapse;background:var(--surface)}
+.month-calendar th{padding:14px 0;color:var(--muted);font-size:11px;font-weight:500;background:var(--paper)}
+.month-calendar td{border:1px solid var(--line);padding:0;vertical-align:top;height:120px}
+.calendar-day{width:100%;height:100%;min-height:120px;padding:10px;background:transparent;border:0;color:var(--ink);text-align:left;display:flex;flex-direction:column;gap:6px;overflow:hidden}
+.calendar-day:hover{background:var(--tile);filter:none}
+.calendar-day[aria-pressed="true"]{background:var(--tile);box-shadow:inset 0 0 0 2px var(--primary)}
+.calendar-day[aria-current="date"] .day-number{background:var(--button-bg);color:white;border-radius:50%}
+.calendar-day.outside-month{color:var(--muted);background:var(--paper)}
+.day-number{font-size:12px;display:grid;place-items:center;width:25px;height:25px;flex-shrink:0}
+.day-marker{font-size:9px;color:var(--primary);display:none}
+.day-event{font-size:10px;line-height:1.5;color:var(--primary);border-left:2px solid var(--brand-green);padding-left:6px;overflow-wrap:anywhere}
+#day-details{margin-top:28px}
+#day-details h2{font-size:28px}
+.calendar-sermon{display:flex;justify-content:space-between;gap:24px;padding:22px 0;border-bottom:1px solid var(--line)}
+.calendar-sermon h3{font-size:17px;font-weight:500;line-height:1.5;margin:0}
+.calendar-sermon .meta{margin:8px 0}
+.calendar-listen{align-self:flex-start;white-space:nowrap;border-radius:24px}
+.calendar-sermon details{font-size:12px;color:var(--muted);line-height:1.7;max-width:640px}
+.calendar-sermon summary{cursor:pointer;width:fit-content}
+.sermon-description{overflow-wrap:anywhere}
+.week-calendar{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));border:1px solid var(--line);background:var(--surface)}
+.week-day{border-right:1px solid var(--line);min-width:0;padding-bottom:16px}
+.week-day:last-child{border-right:0}
+.week-day h3{font-size:11px;text-align:center;font-weight:500;color:var(--muted)}
+.week-day .calendar-day{height:auto;min-height:110px}
+.week-day>.meta{padding:0 10px}
+.agenda-day{margin:28px 0}
+.agenda-date{font-family:'Instrument Serif',Georgia,serif;font-size:26px;font-weight:400;border-bottom:1px solid var(--line);padding-bottom:12px;margin:0}
+@media(max-width:640px){
+.site-nav{padding:0 22px}
+.calendar-intro{margin:34px 0 28px}
+.calendar-intro h1{font-size:42px}
+.calendar-toolbar{gap:18px}
+.period-navigation{width:100%;justify-content:space-between;gap:8px}
+.period-navigation h2{font-size:28px;min-width:0}
+.calendar-controls{width:100%;justify-content:space-between}
+.jump-label{flex-direction:row;align-items:center;gap:8px}
+.month-calendar td{height:72px}
+.calendar-day{min-height:72px;padding:6px 3px;gap:3px;align-items:center}
+.day-marker{display:block;font-size:8px;letter-spacing:-.2px}
+.month-calendar .day-event{display:none}
+.month-calendar th{font-size:10px}
+.calendar-sermon{gap:12px}
+.calendar-sermon h3{font-size:15px}
+#day-details h2{font-size:25px}
+.week-calendar{grid-template-columns:1fr}
+.week-day{display:grid;grid-template-columns:45px 1fr;border-right:0;border-bottom:1px solid var(--line);padding:0}
+.week-day:last-child{border-bottom:0}
+.week-day h3{align-self:start;margin:18px 0}
+.week-day .calendar-day{min-height:64px;align-items:start;padding:10px;gap:5px}
+.week-day .day-marker{display:none}
+.week-day>.meta{grid-column:2;margin:0 0 12px;padding-left:10px}
+}
