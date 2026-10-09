@@ -507,3 +507,16 @@ header{gap:15px}
 .year-month .meta{margin:10px 0 0}
 @media(max-width:800px){.year-calendar{grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}}
 @media(max-width:480px){.year-calendar{grid-template-columns:1fr}.calendar-controls{gap:12px}.calendar-subtoolbar{gap:12px}}
+
+/* One aligned control group replaces labels floating above different-height fields. */
+.calendar-controls{display:grid;grid-template-columns:auto auto auto;align-items:center;gap:8px;padding:8px;background:var(--tile);border:1px solid var(--line);border-radius:12px}
+.calendar-controls #today{height:42px;min-width:66px;padding:0 14px}
+.calendar-controls .jump-label{display:flex;flex-direction:row;align-items:center;justify-content:space-between;gap:8px;height:42px;padding:0 0 0 12px;margin:0;background:var(--surface);border:1px solid var(--border-strong);border-radius:8px;min-width:0}
+.calendar-controls .jump-label>span{white-space:nowrap;font-size:11px;line-height:1;color:var(--muted)}
+.calendar-controls .jump-label input,.calendar-controls .jump-label select{height:40px;min-width:0;padding:0 10px;border:0;background:transparent;border-radius:7px;font-size:12px;color:var(--ink)}
+.calendar-controls .jump-label select{width:76px}
+.calendar-controls .jump-label input{width:145px;max-width:none}
+.calendar-controls .jump-label:focus-within{outline:2px solid var(--focus);outline-offset:2px}
+.calendar-controls .jump-label input:focus-visible,.calendar-controls .jump-label select:focus-visible{outline:none}
+@media(max-width:900px){.calendar-controls{width:100%;grid-template-columns:auto minmax(0,1fr) minmax(0,1.6fr)}.period-navigation{width:100%;justify-content:space-between}.calendar-toolbar{gap:18px}}
+@media(max-width:480px){.calendar-controls{grid-template-columns:72px minmax(0,1fr)}.calendar-controls .date-jump-label{grid-column:1/-1}.calendar-controls .jump-label input{width:160px}}
