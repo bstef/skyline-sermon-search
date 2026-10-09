@@ -440,3 +440,20 @@ header{gap:15px}
 .footer-bottom strong{font-weight:500;color:var(--ink)}
 @media(max-width:800px){.footer-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:30px}.footer-brand{grid-column:1/-1}.footer-tagline{max-width:320px}.footer-links:last-child{grid-column:1/-1;display:flex;flex-direction:row;flex-wrap:wrap;column-gap:22px}.footer-links:last-child h3{width:100%}}
 @media(max-width:420px){.footer-grid{gap:28px 18px}.footer-bottom{flex-direction:column;gap:16px}.footer-bottom p{text-align:left}}
+
+.footer-link-icon{display:inline-block;width:19px;margin-right:5px;font-size:12px;text-align:center}
+.footer-center>.footer-link-icon{margin-left:0;margin-right:5px}
+.footer-podcasts{display:flex;align-items:center;justify-content:space-between;gap:24px;margin-top:32px;padding:24px;border:1px solid var(--border-strong);border-radius:14px;background:var(--tile)}
+.footer-podcasts h3{font-family:'Instrument Serif',Georgia,serif;font-size:27px;font-weight:400;line-height:1.2;color:var(--ink);margin:0 0 6px}
+.footer-podcasts p{margin:0;font-size:11px}
+.podcast-links{display:flex;flex-wrap:wrap;gap:12px}
+.podcast-links a{display:flex;align-items:center;gap:10px;padding:11px 14px;border:1px solid var(--border-strong);border-radius:10px;background:var(--surface);color:var(--ink);font-size:13px;font-weight:600;line-height:1.4}
+.podcast-links a:hover{border-color:var(--brand-green);text-decoration:none}
+.podcast-links a:focus-visible{outline:2px solid var(--primary);outline-offset:4px}
+.podcast-links small{display:block;font-size:9px;color:var(--muted);font-weight:400}
+.podcast-icon{display:grid;place-items:center;width:28px;height:28px;flex-shrink:0}
+.podcast-icon svg{width:28px;height:28px}
+.spotify-icon{color:var(--brand-green)}
+.apple-icon{color:var(--primary)}
+.podcast-arrow{color:var(--muted);margin-left:4px}
+@media(max-width:800px){.footer-podcasts{align-items:flex-start;flex-direction:column;padding:22px}.podcast-links{width:100%}.podcast-links a{flex:1;min-width:145px}}
