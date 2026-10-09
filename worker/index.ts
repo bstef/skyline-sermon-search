@@ -3,10 +3,10 @@
 type SearchEnv = Env & { OPENAI_API_KEY?: string; VECTOR_INDEX?: VectorizeIndex };
 type Passage = {
   id: number; episode_id: string; start: number; end: number; text: string;
-  title: string; date: string; audio_url: string;
+  title: string; date: string; audio_url: string; speaker: string; speaker_source: string;
 };
 const MODEL = 'text-embedding-3-small';
-const passageColumns = 'p.id,p.episode_id,p.start,p.end,p.text,e.title,e.date,e.audio_url';
+const passageColumns = 'p.id,p.episode_id,p.start,p.end,p.text,e.title,e.date,e.audio_url,e.speaker,e.speaker_source';
 function json(value: unknown, status = 200) {
   return Response.json(value, { status, headers: { 'Cache-Control': 'no-store' } });
 }

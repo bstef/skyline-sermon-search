@@ -14,15 +14,16 @@ class ExportTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as directory, patch.dict(os.environ, {'SERMON_DB': str(Path(directory)/'local.db')}):
             core.init()
             with core.database() as db:
-                db.execute('INSERT INTO episodes VALUES(?,?,?,?,?,?)',('one',"God's grace",'2026-01-01','https://example.com/audio','Line one\nline two',''))
-                db.execute('INSERT INTO episodes VALUES(?,?,?,?,?,?)',('two','Faith','2026-01-02','https://example.com/audio','',''))
+                db.execute('INSERT INTO episodes(id,title,date,audio_url,description,link) VALUES(?,?,?,?,?,?)',('one',"God's grace",'2026-01-01','https://example.com/audio','Line one\nline two',''))
+                db.execute('INSERT INTO episodes(id,title,date,audio_url,description,link) VALUES(?,?,?,?,?,?)',('two','Faith','2026-01-02','https://example.com/audio','',''))
             core.import_transcript('one',[{'start':10,'end':20,'text':"God's grace is sufficient"}])
             destination=Path(directory)/'archive.sql'
             result=export_archive(destination)
             self.assertEqual(result['passages'],1)
             remote=sqlite3.connect(':memory:')
             remote.executescript(Path('migrations/0001_schema.sql').read_text())
-            remote.execute('INSERT INTO episodes VALUES(?,?,?,?,?,?)',('two','Faith','2026-01-02','https://example.com/audio','',''))
+            remote.executescript(Path('migrations/0003_speaker_credits.sql').read_text())
+            remote.execute('INSERT INTO episodes(id,title,date,audio_url,description,link) VALUES(?,?,?,?,?,?)',('two','Faith','2026-01-02','https://example.com/audio','',''))
             remote.execute('INSERT INTO passages(id,episode_id,start,end,text) VALUES(99,\'two\',0,5,\'Existing remote transcript\')')
             remote.executescript(destination.read_text())
             remote.executescript(destination.read_text())

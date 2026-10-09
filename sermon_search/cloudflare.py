@@ -21,9 +21,9 @@ def export_archive(destination):
         passages = db.execute('SELECT * FROM passages ORDER BY id').fetchall()
     sql = ['-- Canonical archive export. No transcription or embedding requests.']
     for row in episodes:
-        sql.append('INSERT INTO episodes VALUES(' + ','.join(literal(v) for v in row) +
+        sql.append('INSERT INTO episodes(id,title,date,audio_url,description,link,speaker,speaker_source) VALUES(' + ','.join(literal(v) for v in row) +
                    ') ON CONFLICT(id) DO UPDATE SET title=excluded.title,date=excluded.date,'
-                   'audio_url=excluded.audio_url,description=excluded.description,link=excluded.link;')
+                   'audio_url=excluded.audio_url,description=excluded.description,link=excluded.link,speaker=excluded.speaker,speaker_source=excluded.speaker_source;')
     # Replace only episodes with actual local transcripts. Metadata-only copies
     # cannot erase transcripts already published to D1.
     for eid in sorted({row['episode_id'] for row in passages}):

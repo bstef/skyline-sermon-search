@@ -14,14 +14,16 @@ before(async () => {
   const schema = await readFile('migrations/0001_schema.sql','utf8');
   const statements = schema.match(/CREATE TRIGGER[\s\S]*?END;|CREATE (?:TABLE|INDEX|VIRTUAL TABLE)[\s\S]*?;/g);
   await db.batch(statements.map(s=>db.prepare(s)));
-  await db.prepare('INSERT INTO episodes VALUES(?,?,?,?,?,?)').bind('sermon','Sunday faith','2026-09-20','https://example.com/audio.mp3','Description','').run();
+  const credits = await readFile('migrations/0003_speaker_credits.sql','utf8');
+  for (const statement of credits.split('\n').filter(s => s.startsWith('ALTER TABLE'))) await db.prepare(statement).run();
+  await db.prepare('INSERT INTO episodes(id,title,date,audio_url,description,link,speaker,speaker_source) VALUES(?,?,?,?,?,?,?,?)').bind('sermon','Sunday faith','2026-09-20','https://example.com/audio.mp3','Description','','Jane Doe','description').run();
   await db.prepare('INSERT INTO passages VALUES(?,?,?,?,?,?,?)').bind(1,'sermon',120,180,'Faith and hope in difficult seasons',null,null).run();
   await db.prepare('INSERT INTO passages VALUES(?,?,?,?,?,?,?)').bind(2,'sermon',170,220,'Faith and hope continued',null,null).run();
 });
 after(async()=>{await mf?.dispose();});
 test('API lists dates and transcript coverage from D1',async()=>{
   const episodes=await (await mf.dispatchFetch('https://app.test/api/episodes')).json();
-  assert.equal(episodes[0].date,'2026-09-20'); assert.equal(episodes[0].passages,2);
+  assert.equal(episodes[0].date,'2026-09-20'); assert.equal(episodes[0].passages,2); assert.equal(episodes[0].speaker,'Jane Doe');
   const stats=await (await mf.dispatchFetch('https://app.test/api/stats')).json();
   assert.deepEqual(stats,{episodes:1,indexed:1,passages:2,embedded:0});
 });
@@ -29,7 +31,7 @@ test('FTS returns timestamped passages and removes overlapping hits',async()=>{
   const res=await mf.dispatchFetch('https://app.test/api/search?q=faith&mode=keyword');
   assert.equal(res.status,200); const data=await res.json();
   assert.equal(data.results.length,1); assert.equal(data.results[0].episode_id,'sermon');
-  assert.equal(data.mode,'keyword'); assert.ok(data.results[0].start>=120);
+  assert.equal(data.results[0].speaker,'Jane Doe'); assert.equal(data.mode,'keyword'); assert.ok(data.results[0].start>=120);
 });
 test('smart mode honestly falls back without AI; invalid queries and writes rejected',async()=>{
   const data=await (await mf.dispatchFetch('https://app.test/api/search?q=hope')).json();

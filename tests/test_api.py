@@ -11,7 +11,7 @@ class ApiTests(unittest.TestCase):
     def test_http_search_and_validation(self):
         with tempfile.TemporaryDirectory() as temp, patch.dict(os.environ,{'SERMON_DB':str(Path(temp)/'api.sqlite3')}), TestClient(app) as client:
             with core.database() as db:
-                db.execute('INSERT INTO episodes VALUES(?,?,?,?,?,?)',('test','Example sermon','2026-10-04','https://example.com/sermon.mp3','',''))
+                db.execute('INSERT INTO episodes(id,title,date,audio_url,description,link) VALUES(?,?,?,?,?,?)',('test','Example sermon','2026-10-04','https://example.com/sermon.mp3','',''))
             core.import_transcript('test',[{'start':125,'end':155,'text':'We talk about forgiveness and peace.'}])
             result = client.get('/api/search',params={'q':'forgiveness','mode':'keyword'})
             self.assertEqual(result.status_code,200)

@@ -20,7 +20,7 @@ class GroqTests(unittest.TestCase):
             'GROQ_TRANSCRIPTION_MODEL':'whisper-large-v3','GROQ_API_KEY':'fake-groq-key'}, clear=True)
         self.env.start();core.init()
         with core.database() as db:
-            db.execute('INSERT INTO episodes VALUES(?,?,?,?,?,?)',('episode','Test sermon','2026-10-04','https://example.com/audio.mp3','',''))
+            db.execute('INSERT INTO episodes(id,title,date,audio_url,description,link) VALUES(?,?,?,?,?,?)',('episode','Test sermon','2026-10-04','https://example.com/audio.mp3','',''))
     def tearDown(self):
         self.env.stop();self.temp.cleanup()
     def test_explicit_groq_client_is_separate_from_openai(self):

@@ -1,4 +1,5 @@
 """Storage and retrieval. Podcast ingestion is separate from public search."""
+from .speakers import speaker_credit
 import hashlib
 import json
 import math
@@ -54,6 +55,10 @@ def init():
         CREATE TABLE IF NOT EXISTS revision (id INTEGER PRIMARY KEY CHECK(id=1), value INTEGER NOT NULL);
         INSERT OR IGNORE INTO revision VALUES(1,0);
         ''')
+        columns = {r['name'] for r in db.execute('PRAGMA table_info(episodes)')}
+        for column in ('speaker', 'speaker_source'):
+            if column not in columns:
+                db.execute(f"ALTER TABLE episodes ADD COLUMN {column} TEXT NOT NULL DEFAULT ''")
 
 def safe_url(url):
     return url if urlparse(url).scheme in ('https', 'http') else ''
@@ -72,11 +77,13 @@ def ingest_xml(xml):
             eid = hashlib.sha256(guid.encode()).hexdigest()[:20]
             date = parsedate_to_datetime(item.findtext('pubDate')).date().isoformat()
             description = re.sub('<[^>]+>', ' ', item.findtext('description') or '').strip()
-            db.execute('''INSERT INTO episodes VALUES(?,?,?,?,?,?) ON CONFLICT(id) DO UPDATE SET
+            speaker, speaker_source = speaker_credit(item)
+            db.execute('''INSERT INTO episodes(id,title,date,audio_url,description,link,speaker,speaker_source) VALUES(?,?,?,?,?,?,?,?) ON CONFLICT(id) DO UPDATE SET
               title=excluded.title,date=excluded.date,audio_url=excluded.audio_url,
-              description=excluded.description,link=excluded.link''',
+              description=excluded.description,link=excluded.link,
+              speaker=excluded.speaker,speaker_source=excluded.speaker_source''',
               (eid, item.findtext('title') or 'Untitled sermon', date, audio, description,
-               safe_url(item.findtext('link') or '')))
+               safe_url(item.findtext('link') or ''), speaker, speaker_source))
             count += 1
     return count
 
@@ -178,7 +185,7 @@ def search(query, mode='smart', limit=20):
                 notice = 'Showing keyword matches. Meaning search needs indexed embeddings and a server API key.'
         results = []
         for pid in sorted(scores,key=scores.get, reverse=True):
-            row = db.execute('''SELECT p.id,p.episode_id,p.start,p.end,p.text,e.title,e.date,e.audio_url
+            row = db.execute('''SELECT p.id,p.episode_id,p.start,p.end,p.text,e.title,e.date,e.audio_url,e.speaker,e.speaker_source
               FROM passages p JOIN episodes e ON e.id=p.episode_id WHERE p.id=?''',(pid,)).fetchone()
             # Avoid adjacent overlapping hits crowding the page.
             if any(r['episode_id']==row['episode_id'] and max(r['start'],row['start'])<min(r['end'],row['end']) for r in results):

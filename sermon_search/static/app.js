@@ -12,6 +12,7 @@ function render(rows, searching=false) {
     const tile = node('div', undefined, 'date-tile');
     tile.append(node('span',date.toLocaleDateString('en-US',{month:'short'}).toUpperCase()),node('strong',date.getDate()),node('span',date.getFullYear()));
     const body = node('div'); body.append(node('h3',e.title),node('div',searching ? `Sermon passage · ${clock(e.start)}–${clock(e.end)}` : 'Skyline Church Podcast', 'meta'));
+    if(e.speaker) body.append(node('div', `Speaker: ${e.speaker}`, 'meta speaker-credit'));
     if(searching) body.append(node('p',e.text,'excerpt'));
     else body.append(node('span',e.passages ? 'Transcript searchable' : 'Audio available · transcript pending','tag'));
     const play = node('button', searching ? `▶ Listen at ${clock(e.start)}` : '▶ Listen');

@@ -22,6 +22,7 @@ function sermonCard(e) {
   const card=make('article',undefined,'calendar-sermon');
   const body=make('div');
   body.append(make('h3',displayTitle(e)),make('p',e.passages ? 'Transcript searchable' : 'Audio available · transcript pending','meta'));
+  if(e.speaker) body.append(make('p',`Speaker: ${e.speaker}`,'meta speaker-credit'));
   if(e.description) {
     const details=make('details'); details.append(make('summary','About this message'),make('p',e.description,'sermon-description')); body.append(details);
   }
@@ -49,7 +50,7 @@ function dateButton(date, outside=false) {
   button.append(make('span',date.getDate(),'day-number'));
   if(rows.length) {
     const marker=make('span',`${rows.length} ${rows.length===1?'sermon':'sermons'}`,'day-marker');button.append(marker);
-    rows.forEach(e=>button.append(make('span',displayTitle(e),'day-event')));
+    rows.forEach(e=>button.append(make('span',displayTitle(e)+(e.speaker ? ` · ${e.speaker}` : ''),'day-event')));
   }
   button.addEventListener('click',()=>selectDate(key));return button;
 }

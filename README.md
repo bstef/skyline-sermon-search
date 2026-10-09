@@ -127,6 +127,12 @@ python -m sermon_search.cli embed
 
 Reference: [OpenAI embeddings](https://developers.openai.com/api/docs/guides/embeddings).
 
+## Speaker credits
+
+Listings, search results, and calendar cards display a speaker only when podcast metadata explicitly credits one. The feed currently uses “Skyline Church” as every episode’s publisher; this is not used as a speaker. Two archive descriptions explicitly identify participants: June 21, 2020 (Pastor Chris & Janaïs Mia) and September 20, 2020 (Pastor Chris & church elders). Uncredited sermons have no speaker label. Names are taken as written; surnames are not inferred.
+
+Sync checks explicit speaker/preacher labels, attributed titles, and Podcast Index person tags with speaker/preacher roles. It records the metadata source and refreshes credits without touching transcripts. This deliberately conservative parser does not infer speakers from arbitrary mentions, audio, or the church’s usual preacher.
+
 ## Design
 
 - Workers serves the deployed frontend and read-only APIs with D1 storage. FastAPI remains available for local Python development.
