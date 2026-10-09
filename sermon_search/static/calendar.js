@@ -20,6 +20,7 @@ function rowsOn(key) { return byDate.get(key) || []; }
 function displayTitle(e) { return e.title.replace(/^\d{1,2}\/\d{1,2}\/\d{2,4}\s*[-–:]\s*/, ''); }
 function sermonCard(e) {
   const card=make('article',undefined,'calendar-sermon');
+  card.dataset.sermonId=String(e.id); card.id=`sermon-${e.id}`; card.tabIndex=-1;
   const body=make('div');
   body.append(make('h3',displayTitle(e)),make('p',e.passages ? 'Transcript searchable' : 'Audio available · transcript pending','meta'));
   if(e.speaker) body.append(make('p',`Speaker: ${e.speaker}`,'meta speaker-credit'));
@@ -27,7 +28,7 @@ function sermonCard(e) {
     const details=make('details'); details.append(make('summary','About this message'),make('p',e.description,'sermon-description')); body.append(details);
   }
   const play=make('button','▶ Listen','calendar-listen');
-  play.addEventListener('click',()=>window.SkylinePlayer.listen(e));
+  play.addEventListener('click',()=>window.SkylinePlayer.listen(e,0,card.id));
   card.append(body,play); return card;
 }
 function renderDetails() {
@@ -103,6 +104,7 @@ function render() {
   $('day-details').hidden=view==='agenda';if(view!=='agenda')renderDetails();
   $('previous').disabled=start.getFullYear()<=1900 && start.getMonth()===0;
   $('next').disabled=end.getFullYear()>2100;
+  window.SkylinePlayer.refresh();
   const url=new URL(location.href);url.searchParams.set('date',selected);url.searchParams.set('view',view);history.replaceState(null,'',url);
 }
 function move(n) {
@@ -110,6 +112,10 @@ function move(n) {
   if(target.getFullYear()<1900 || target.getFullYear()>2100)return;
   selected=dateKey(target);focus=target;render();
 }
+window.SkylinePlayer.registerReveal(episode=>{
+  const sermon=episodes.find(e=>e.id===episode.id);
+  if(sermon)selectDate(sermon.date);
+});
 $('previous').addEventListener('click',()=>move(-1));$('next').addEventListener('click',()=>move(1));
 $('today').addEventListener('click',()=>selectDate(dateKey(today)));
 $('jump-date').addEventListener('change',e=>{if(fromKey(e.target.value))selectDate(e.target.value);});

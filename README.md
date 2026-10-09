@@ -142,7 +142,7 @@ Sync checks explicit speaker/preacher labels, attributed titles, and Podcast Ind
 - NumPy searches normalized precomputed embeddings; the matrix is cached until the index changes. This is appropriate to validate an archive of this size, but latency and memory must be measured with the full transcript corpus. Move vectors to an indexed vector database if the archive or concurrency outgrows this approach.
 - RSS GUIDs create stable episode IDs, preventing duplicate imports. Rerunning `sync` preserves transcripts.
 - Metadata and transcripts are separate: descriptions are never passed off as sermon quotations.
-- A single HTML audio player seeks in the original podcast file. Playback and seeking depend on the podcast host's browser/range support.
+- A single HTML audio player seeks in the original podcast file. “Show in list” restores the playing sermon in the library or its calendar date, scrolls to it, and focuses its entry. The selected row is highlighted; a small dot pulses only during playback, respecting reduced-motion preferences. Closing the player clears the highlight. Playback and seeking depend on the podcast host's browser/range support.
 - Search links retain query and mode in the URL.
 - `/calendar` shows month, week, and agenda views with date navigation, a date picker, sermon details, and playback. Calendar dates come from the sermon title when it starts with a valid M/D/YYYY date, falling back to podcast publication. The chosen view is saved locally, and date/view links can be shared.
 

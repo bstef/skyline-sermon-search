@@ -8,6 +8,9 @@ function render(rows, searching=false) {
   $('results').replaceChildren();
   rows.forEach(e => {
     const article = node('article', undefined, 'card');
+    article.dataset.sermonId = String(e.episode_id || e.id);
+    article.id = `sermon-${e.episode_id || e.id}${searching ? '-passage-'+e.id : ''}`;
+    article.tabIndex = -1;
     const date = new Date(`${e.date}T12:00:00`);
     const tile = node('div', undefined, 'date-tile');
     tile.append(node('span',date.toLocaleDateString('en-US',{month:'short'}).toUpperCase()),node('strong',date.getDate()),node('span',date.getFullYear()));
@@ -16,9 +19,10 @@ function render(rows, searching=false) {
     if(searching) body.append(node('p',e.text,'excerpt'));
     else body.append(node('span',e.passages ? 'Transcript searchable' : 'Audio available · transcript pending','tag'));
     const play = node('button', searching ? `▶ Listen at ${clock(e.start)}` : '▶ Listen');
-    play.addEventListener('click',()=>listen(e,searching ? e.start : 0));
+    play.addEventListener('click',()=>listen(e,searching ? e.start : 0,article.id));
     article.append(tile,body,play); $('results').append(article);
   });
+  window.SkylinePlayer.refresh();
   if(!rows.length) $('results').append(node('div',searching ? 'No searchable passages found. Try another phrase. Sermons with pending transcripts cannot appear in search yet.' : 'No sermons imported yet. Run the podcast sync command to load the library.','empty'));
 }
 function browse() {
@@ -42,6 +46,13 @@ async function search() {
     const url = new URL(location.href); url.searchParams.set('q',q); url.searchParams.set('mode',mode); history.replaceState(null,'',url);
   } catch(e) { if(e.name!=='AbortError') $('status').textContent = e.message; }
 }
+window.SkylinePlayer.registerReveal((episode, entryId) => {
+  if (document.getElementById(entryId)) return;
+  const id = episode.episode_id || episode.id;
+  if ([...document.querySelectorAll('[data-sermon-id]')].some(row => row.dataset.sermonId === String(id))) return;
+  const index = library.findIndex(e => e.id === id);
+  if (index >= 0) { visible = Math.max(visible, index + 1); browse(); }
+});
 $('search-form').addEventListener('submit',e=>{ e.preventDefault(); search(); });
 document.querySelectorAll('[data-query]').forEach(e=>e.addEventListener('click',()=>{ $('query').value=e.dataset.query; search(); }));
 $('browse').addEventListener('click',browse);

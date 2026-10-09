@@ -410,3 +410,14 @@ header{gap:15px}
 .week-day .day-marker{display:none}
 .week-day>.meta{grid-column:2;margin:0 0 12px;padding-left:10px}
 }
+
+/* Keep the selected sermon recognizable while browsing or changing views. */
+#player-entry{display:inline-block;margin-top:7px;font-size:12px;color:var(--primary);text-decoration:underline;text-underline-offset:3px}
+.card,.calendar-sermon{scroll-margin-block:24px 190px;transition:background-color .2s ease,box-shadow .2s ease}
+.card.is-current,.calendar-sermon.is-current{background:var(--tile);box-shadow:inset 3px 0 var(--brand-green);border-radius:7px;padding-left:14px;padding-right:14px}
+.playback-badge{display:inline-flex;align-items:center;gap:7px;color:var(--primary);font-size:10px;font-weight:600;margin:0 0 8px}
+.playback-badge::before{content:'';width:5px;height:5px;border-radius:50%;background:var(--brand-green)}
+.is-playing .playback-badge::before{animation:playing-glow 2s ease-in-out infinite}
+@keyframes playing-glow{50%{opacity:.45;box-shadow:0 0 0 3px color-mix(in srgb,var(--brand-green) 15%,transparent)}}
+#player-panel{z-index:10}
+@media(prefers-reduced-motion:reduce){.card,.calendar-sermon{transition:none}.is-playing .playback-badge::before{animation:none}}
