@@ -16,6 +16,9 @@ let savedView;
 try { savedView=localStorage.getItem('skyline-calendar-view'); } catch {}
 if(['month','week','agenda','year'].includes(params.get('view') || savedView)) view=params.get('view') || savedView;
 if(fromKey(params.get('date'))) { selected=params.get('date'); focus=fromKey(selected); }
+// A selected spillover date can belong to a different month than the visible grid.
+const linkedMonth = /^\d{4}-\d{2}$/.test(params.get('month') || '') ? fromKey(`${params.get('month')}-01`) : null;
+if(view==='month' && linkedMonth)focus=linkedMonth;
 function rowsOn(key) { return byDate.get(key) || []; }
 function displayTitle(e) { return e.title.replace(/^\d{1,2}\/\d{1,2}\/\d{2,4}\s*[-–:]\s*/, ''); }
 function sermonCard(e) {
@@ -37,8 +40,9 @@ function renderDetails() {
   $('day-sermons').replaceChildren(...rows.map(sermonCard));
   if(!rows.length) $('day-sermons').append(make('p','No sermon is listed for this date. Select a marked date to listen.','empty'));
 }
-function selectDate(key) {
-  selected=key; focus=fromKey(key); if(view==='year')view='month'; render();
+function selectDate(key, keepPeriod=false) {
+  const target=fromKey(key);if(!target)return;
+  selected=key; if(!keepPeriod)focus=target; if(view==='year')view='month'; render();
   document.querySelector(`.calendar-day[data-date="${selected}"]`)?.focus({preventScroll:true});
 }
 function dateButton(date, outside=false) {
@@ -53,7 +57,7 @@ function dateButton(date, outside=false) {
     const marker=make('span',`${rows.length} ${rows.length===1?'sermon':'sermons'}`,'day-marker');button.append(marker);
     rows.forEach(e=>button.append(make('span',displayTitle(e)+(e.speaker ? ` · ${e.speaker}` : ''),'day-event')));
   }
-  button.addEventListener('click',()=>selectDate(key));return button;
+  button.addEventListener('click',()=>selectDate(key,view==='month'));return button;
 }
 function range() {
   if(view==='year')return [new Date(focus.getFullYear(),0,1,12),new Date(focus.getFullYear()+1,0,1,12)];
@@ -139,7 +143,11 @@ function render() {
   $('previous').disabled=start.getFullYear()<=1900 && start.getMonth()===0;
   $('next').disabled=end.getFullYear()>2100;
   window.SkylinePlayer.refresh();
-  const url=new URL(location.href);url.searchParams.set('date',selected);url.searchParams.set('view',view);history.replaceState(null,'',url);
+  const url=new URL(location.href);url.searchParams.set('date',selected);url.searchParams.set('view',view);
+  const visibleMonth=dateKey(focus).slice(0,7);
+  if(view==='month' && selected.slice(0,7)!==visibleMonth)url.searchParams.set('month',visibleMonth);
+  else url.searchParams.delete('month');
+  history.replaceState(null,'',url);
 }
 function move(n) {
   const target=view==='year' ? new Date(focus.getFullYear()+n,0,1,12) : view==='week' ? addDays(focus,n*7) : new Date(focus.getFullYear(),focus.getMonth()+n,1,12);
@@ -158,7 +166,9 @@ $('calendar-year').addEventListener('change',e=>{
   focus=new Date(year,focus.getMonth(),day,12);selected=dateKey(focus);render();
 });
 $('jump-date').addEventListener('change',e=>{if(fromKey(e.target.value))selectDate(e.target.value);});
-document.querySelectorAll('[data-view]').forEach(b=>b.addEventListener('click',()=>{view=b.dataset.view;try{localStorage.setItem('skyline-calendar-view',view);}catch{}render();}));
+document.querySelectorAll('[data-view]').forEach(b=>b.addEventListener('click',()=>{
+  if(view!==b.dataset.view && selected.slice(0,7)!==dateKey(focus).slice(0,7))selected=dateKey(focus);
+  view=b.dataset.view;try{localStorage.setItem('skyline-calendar-view',view);}catch{}render();}));
 (async()=>{
   try {
     const response=await fetch('/api/episodes');if(!response.ok)throw new Error();episodes=(await response.json()).map(e=>{
