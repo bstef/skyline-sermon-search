@@ -173,20 +173,20 @@ h2{font-family:'Instrument Serif',Georgia,serif;
   align-items:start;
   border-bottom:1px solid var(--line);
   padding:25px 0}
-.date-tile{height:78px;
-  background:var(--tile);
-  border-radius:7px;
+.date-tile{min-height:96px;
+  border:1px solid var(--border-strong);
+  background:var(--surface);
+  border-radius:10px;
+  overflow:hidden;
   display:flex;
   flex-direction:column;
-  justify-content:center;
   align-items:center;
-  color:var(--tile-text);
-  font-size:10px;
-  letter-spacing:1px}
-.date-tile strong{font-family:'Instrument Serif',Georgia,serif;
-  font-weight:400;
-  font-size:30px;
-  margin:4px 0}
+  color:var(--ink);
+  text-align:center}
+.date-month{display:flex;align-items:center;justify-content:center;gap:6px;width:100%;padding:7px 3px;background:var(--tile);color:var(--primary);font-size:10px;font-weight:700;letter-spacing:.5px;border-bottom:1px solid var(--line)}
+.date-year{font-size:9px;font-weight:500;letter-spacing:0}
+.date-tile .date-day{font-family:'Instrument Serif',Georgia,serif;font-weight:400;font-size:36px;line-height:1;margin:8px 0 4px}
+.date-weekday{font-size:10px;line-height:1.4;color:var(--muted);padding:0 3px 8px;letter-spacing:0}
 .card h3{font-size:17px;
   line-height:1.4;
   font-weight:500;
@@ -262,9 +262,12 @@ h1{font-size:52px}
   gap:12px}
 .section-heading>span{max-width:120px;
   line-height:1.6}
-.card{grid-template-columns:55px 1fr;
+.card{grid-template-columns:64px 1fr;
   gap:15px}
-.date-tile{height:65px}
+.date-tile{min-height:90px}
+.date-month{gap:4px;font-size:9px}
+.date-tile .date-day{font-size:32px}
+.date-weekday{font-size:9px}
 .card button{grid-column:2;
   justify-self:start}
 #player-panel{flex-wrap:wrap;

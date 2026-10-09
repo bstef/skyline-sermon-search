@@ -12,8 +12,12 @@ function render(rows, searching=false) {
     article.id = `sermon-${e.episode_id || e.id}${searching ? '-passage-'+e.id : ''}`;
     article.tabIndex = -1;
     const date = new Date(`${e.date}T12:00:00`);
-    const tile = node('div', undefined, 'date-tile');
-    tile.append(node('span',date.toLocaleDateString('en-US',{month:'short'}).toUpperCase()),node('strong',date.getDate()),node('span',date.getFullYear()));
+    const tile = node('time', undefined, 'date-tile');
+    tile.dateTime = e.date;
+    tile.setAttribute('aria-label',date.toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric',year:'numeric'}));
+    const month = node('span',undefined,'date-month');
+    month.append(node('span',date.toLocaleDateString('en-US',{month:'short'}).toUpperCase()),node('span',date.getFullYear(),'date-year'));
+    tile.append(month,node('strong',date.getDate(),'date-day'),node('span',date.toLocaleDateString('en-US',{weekday:'long'}),'date-weekday'));
     const body = node('div'); body.append(node('h3',e.title),node('div',searching ? `Sermon passage · ${clock(e.start)}–${clock(e.end)}` : 'Skyline Church Podcast', 'meta'));
     if(e.speaker) body.append(node('div', `Speaker: ${e.speaker}`, 'meta speaker-credit'));
     if(searching) body.append(node('p',e.text,'excerpt'));
