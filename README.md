@@ -34,22 +34,48 @@ Use the ID printed by `list`. The JSON format is:
 
 Times are seconds from the start of the original podcast. Import validates time ranges, preserves source wording, and builds overlapping passages of about 60 seconds (up to 220 words). A single unusually long source segment remains intact. Reimporting replaces that episode's passages and invalidates its embeddings atomically. Automated transcripts and their timing should be checked against audio before relying on quotations.
 
-## Optional OpenAI processing
+## Groq transcription (manual start only)
 
-These commands make paid API calls. No paid processing has been run in this initial build. Keep the API key in the backend environment. `.env.example` documents variables; the app does not auto-load `.env` files.
+Transcription uses **Groq Whisper Large V3** by default. No transcription starts at web-server startup, during `sync`, or when a key is configured. No schedule is installed. The explicit `transcribe` command makes paid API calls; `--dry-run` does not download audio or call any API.
+
+Keep credentials in the backend environment. `.env.example` documents variables; the app does not auto-load `.env` files. Obtain a key from [Groq Console](https://console.groq.com/keys).
 
 ```sh
-export OPENAI_API_KEY='your-key'
+export GROQ_API_KEY='your-groq-key'
+# Optional cheaper model; default is whisper-large-v3.
+# export GROQ_TRANSCRIPTION_MODEL='whisper-large-v3-turbo'
+python -m sermon_search.cli list
+# Safe configuration check. Replace EPISODE_ID with an ID from list.
+python -m sermon_search.cli transcribe EPISODE_ID --dry-run
+```
+
+When ready to start processing one sermon explicitly:
+
+```sh
 # Install ffmpeg through your system package manager; ffprobe is included.
 python -m sermon_search.cli transcribe EPISODE_ID
+```
+
+`transcribe` downloads one sermon and splits it into lossless 16 kHz mono, 10-minute FLAC chunks below Groq's 25 MB free-tier upload limit. Groq returns timestamped segments that are imported into the existing passage index. Transcription requests use a 120-second timeout with up to two SDK retries; rate limits can still stop a run. Running the same command again resumes completed chunk responses.
+
+Checkpoints are separated by provider, model, and processing settings to avoid mixing Groq with earlier OpenAI output. They are saved under `transcripts/` next to the database (override with `TRANSCRIPT_CACHE_DIR`). Completed responses are written atomically. A failed or invalid transcript import preserves any previously indexed passages. Rerunning a successfully completed episode reimports its transcript and clears its embeddings, so run `embed` afterward. Concurrent processing of the same episode is not supported yet. Bulk jobs and weekly scheduling remain future work.
+
+Timestamp offsets use actual chunk durations. FLAC avoids MP3 padding accumulation, but model timestamps are still approximate and should be checked against the original audio. No live Groq transcription has been tested in this build; integration tests use mock responses and make no paid calls.
+
+References: [Groq speech-to-text and timestamps](https://console.groq.com/docs/speech-to-text), [SDK compatibility endpoint](https://console.groq.com/docs/openai).
+
+## Optional embeddings for contextual search
+
+Groq transcription and search embeddings use separate credentials. Groq alone enables keyword search of the transcribed passages. Meaning-based search uses the existing OpenAI embeddings integration:
+
+```sh
+export OPENAI_API_KEY='your-openai-key'
 python -m sermon_search.cli embed
 ```
 
-`transcribe` downloads one sermon, splits it into compressed 10-minute audio files, and requests segment timestamps using `whisper-1`. Completed chunk responses are cached under `data/transcripts/` so reruns can resume. Both ffmpeg and ffprobe must be available. Timestamps are approximate; splitting and compressed audio can introduce small boundary drift. An imported transcript from another provider works equally well.
+`embed` makes paid API calls and indexes only missing passage embeddings with `text-embedding-3-small`, using 512 dimensions. The web server uses one query embedding per distinct smart query, cached in memory (256 entries per worker). It merges keyword and cosine rankings with reciprocal rank fusion, filters low semantic similarity, and removes overlapping duplicate hits. If AI is unavailable, it returns keyword results with a visible notice. API queries have bounded lengths; provider timeouts and retries are bounded.
 
-`embed` indexes only missing passage embeddings with `text-embedding-3-small`, using 512 dimensions. The web server uses one query embedding per distinct smart query, cached in memory (256 entries per worker). It merges keyword and cosine rankings with reciprocal rank fusion, filters low semantic similarity, and removes overlapping duplicate hits. If AI is unavailable, it returns keyword results with a visible notice. API queries have bounded lengths; provider timeouts and retries are bounded.
-
-References: [timestamped transcription](https://developers.openai.com/api/docs/guides/speech-to-text), [embeddings](https://developers.openai.com/api/docs/guides/embeddings).
+Reference: [OpenAI embeddings](https://developers.openai.com/api/docs/guides/embeddings).
 
 ## Design
 
