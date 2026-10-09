@@ -11,9 +11,14 @@ function render(rows, searching=false) {
     article.dataset.sermonId = String(e.episode_id || e.id);
     article.id = `sermon-${e.episode_id || e.id}${searching ? '-passage-'+e.id : ''}`;
     article.tabIndex = -1;
-    const date = new Date(`${e.date}T12:00:00`);
+    const titleDate = e.title.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})\b/);
+    const titleKey = titleDate ? `${titleDate[3]}-${titleDate[1].padStart(2,'0')}-${titleDate[2].padStart(2,'0')}` : '';
+    const titleValue = titleKey ? new Date(`${titleKey}T12:00:00`) : null;
+    const validTitleDate = titleValue && Number(titleDate[3]) >= 1900 && Number(titleDate[3]) <= 2100 && titleValue.getFullYear() === Number(titleDate[3]) && titleValue.getMonth() + 1 === Number(titleDate[1]) && titleValue.getDate() === Number(titleDate[2]);
+    const displayDate = validTitleDate ? titleKey : e.date;
+    const date = new Date(`${displayDate}T12:00:00`);
     const tile = node('time', undefined, 'date-tile');
-    tile.dateTime = e.date;
+    tile.setAttribute('datetime',displayDate);
     tile.setAttribute('aria-label',date.toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric',year:'numeric'}));
     const month = node('span',undefined,'date-month');
     month.append(node('span',date.toLocaleDateString('en-US',{month:'short'}).toUpperCase()),node('span',date.getFullYear(),'date-year'));
