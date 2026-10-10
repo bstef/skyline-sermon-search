@@ -1,6 +1,6 @@
 # Skyline Echo
 
-[Open the app](https://skylinechurch.app/) · [Project overview source](docs/index.html) · [n8n setup](integrations/n8n/README.md) · [Publishing guide](integrations/n8n/PUBLISHING.md)
+[Open the app](https://skylinechurch.app/) · [Project overview](https://bstef.com/skyline-sermon-search/) · [n8n setup](integrations/n8n/README.md) · [Publishing guide](integrations/n8n/PUBLISHING.md)
 
 A sermon library and timestamped search app for Skyline Church in Bloomfield, New Jersey. Browse the podcast archive, explore sermons by date, and listen to the original audio. Once transcripts are published, search saved passages and return to the moment a phrase was said.
 
@@ -34,7 +34,7 @@ The separate [sample workflow](integrations/n8n/skyline-echo-publishing-test.wor
 
 ## Project page
 
-`docs/index.html` is a standalone project overview with local assets and a theme toggle, following the format of the other bstef.com project pages. The intended GitHub Pages source is **main → /docs**, with a project URL of `https://bstef.com/skyline-sermon-search/`. This repository is private, and GitHub rejected Pages activation on the current account plan. The overview is committed and ready to host, but that URL is not live yet. Publishing requires a plan supporting private-repository Pages, deliberately making this repository public, or hosting only the documentation assets through a separate public site. It is separate from the live application and requires no AI keys or application backend.
+`docs/index.html` is a standalone project overview with local assets and a theme toggle, following the format of the other bstef.com project pages. GitHub Pages publishes **main → /docs** at [bstef.com/skyline-sermon-search](https://bstef.com/skyline-sermon-search/). Changes to the documentation are published automatically when pushed to main. It is separate from the live application and requires no AI keys or application backend.
 
 Preview locally (then open http://localhost:8766):
 
