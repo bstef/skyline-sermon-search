@@ -1,10 +1,44 @@
-# Skyline Sermon Search
+# Skyline Echo
 
-A first working foundation for searching Skyline Church in Bloomfield, New Jersey. Search saved sermon passages, read their context, and start the original podcast audio at the passage timestamp.
+[Open the app](https://skylinechurch.app/) · [Project overview](https://bstef.com/skyline-sermon-search/) · [n8n setup](integrations/n8n/README.md) · [Publishing guide](integrations/n8n/PUBLISHING.md)
+
+A sermon library and timestamped search app for Skyline Church in Bloomfield, New Jersey. Browse the podcast archive, explore sermons by date, and listen to the original audio. Once transcripts are published, search saved passages and return to the moment a phrase was said.
+
+![Skyline Echo sermon library](docs/assets/library.png)
+
+## Current status
+
+- The live app runs on Cloudflare Workers with D1. The initial archive contains 481 episode records; audio can be played before transcription.
+- Keyword search uses transcript passages. Optional contextual search requires embeddings and separate provider configuration; it falls back visibly to keywords when unavailable.
+- The n8n runner supports Groq transcription on a local LXC, bounded batches, retries, saved checkpoints, and protected publishing to Cloudflare.
+- The LXC-to-Cloudflare sample validation passed on October 9, 2026. It made no Groq calls and wrote no sample data to public search. A real-sermon transcription trial is still pending.
+- The imported weekly workflow is configured for Mondays at 06:00 America/New_York, with its schedule disabled and global dry-run enabled. Installation and website deployments never start transcription.
+
+## Features
+
+- Sermon library with readable dates and weekdays, plus speaker credits when explicitly available in podcast metadata.
+- Month, week, and agenda calendar views, year navigation, Today, and jump-to-date controls.
+- Timestamped passage playback, a persistent player, and “Show in list” with a highlighted playing sermon.
+- Skyline blue–green branding, self-hosted Instrument fonts, favicon, and light/dark themes.
+- Church, Church Center, social, podcast, and Google Maps links.
+
+## Weekly transcription and publishing
+
+See the [n8n installation guide](integrations/n8n/README.md) and [Cloudflare publishing guide](integrations/n8n/PUBLISHING.md). The workflow runs Python and FFmpeg in the LXC; Groq performs speech recognition remotely. Saved transcript JSON and the local SQLite index remain under `/var/lib/skyline-echo`. Temporary downloaded audio and FLAC chunks are removed when processing exits normally.
+
+The protected `POST /api/admin/transcripts` endpoint accepts timestamped transcripts and episode metadata. Configure the Worker secret `TRANSCRIPT_PUBLISH_TOKEN` and the matching LXC file `/etc/skyline-echo-publish.token` with permissions 600. The endpoint defaults to validation, and synthetic samples cannot be committed. Secrets belong outside Git and exported workflow JSON.
+
+When explicitly enabled, publishing updates D1 and keyword search without rebuilding the site. Publication receipts prevent duplicate uploads; failed publication can retry a saved transcript without another Groq call. D1 assigns passage IDs. This publishing path does not generate semantic embeddings. The main runner’s global `dry_run: true` prevents both transcription and automatic publication.
+
+The separate [sample workflow](integrations/n8n/skyline-echo-publishing-test.workflow.json) validates authentication and timestamps without transcription or public writes. For the current single-sermon-at-a-time Groq setup, 80 GB and six cores provide ample headroom. Measure actual usage after the first real run and retain n8n execution-data pruning.
+
+## Project page
+
+`docs/index.html` is a standalone project overview with local assets and a theme toggle, following the format of the other bstef.com project pages. GitHub Pages serves **main → /docs** at [bstef.com/skyline-sermon-search](https://bstef.com/skyline-sermon-search/). It is separate from the live application and requires no AI keys or application backend.
 
 ## Cloudflare Workers deployment
 
-The website and read-only APIs run on Workers with Static Assets and D1. The Python tools remain the manual transcription / ingestion environment; they are not run inside Workers. Deployments never download or transcribe audio, call Groq, generate embeddings, or install a schedule.
+The website, public read-only APIs, and protected transcript publishing endpoint run on Workers with Static Assets and D1. Python tools run transcription and ingestion manually or through n8n; they are not run inside Workers. Deployments never download or transcribe audio, call Groq, generate embeddings, or install a schedule.
 
 In Cloudflare Workers Builds, connect this repository and use:
 
@@ -18,7 +52,13 @@ For local development with the Cloudflare runtime (Node.js 22.18+):
 
 ```sh
 npm ci
+```
+
+```sh
 npm run db:local
+```
+
+```sh
 npm run dev
 ```
 
@@ -30,6 +70,9 @@ After explicitly syncing or transcribing with the Python CLI below, export the c
 
 ```sh
 python -m sermon_search.cli export-cloudflare data/cloudflare-import.sql
+```
+
+```sh
 npx wrangler d1 execute DB --remote --file data/cloudflare-import.sql
 ```
 
@@ -41,14 +84,21 @@ Keyword search is ready once transcripts are published. For contextual search, e
 
 ```sh
 npx wrangler vectorize create skyline-sermon-passages --dimensions 512 --metric cosine
-# Add: "vectorize": [{ "binding": "VECTOR_INDEX", "index_name": "skyline-sermon-passages" }]
-# After explicitly generating local embeddings and exporting:
+```
+
+```sh
 npx wrangler vectorize upsert skyline-sermon-passages --file data/cloudflare-import.ndjson
+```
+
+```sh
 npx wrangler secret put OPENAI_API_KEY
+```
+
+```sh
 npm run deploy
 ```
 
-The export writes a companion NDJSON file of existing embeddings; it never generates them. Upsert again after transcript changes. Vector IDs include a content fingerprint so old vectors cannot match replaced text. D1 remains the source of passage text and timestamps; unmatched/stale vector IDs are ignored. Until the binding, embeddings, and key are configured, smart mode displays an honest keyword fallback. Semantic search merges keyword and vector ranks and removes overlapping hits. Query embeddings make paid calls; configure rate limits / spend controls before enabling publicly. The Worker has no public transcription or admin endpoints.
+The export writes a companion NDJSON file of existing embeddings; it never generates them. Upsert again after transcript changes. Vector IDs include a content fingerprint so old vectors cannot match replaced text. D1 remains the source of passage text and timestamps; unmatched/stale vector IDs are ignored. Until the binding, embeddings, and key are configured, smart mode displays an honest keyword fallback. Semantic search merges keyword and vector ranks and removes overlapping hits. Query embeddings make paid calls; configure rate limits / spend controls before enabling publicly. The Worker never transcribes audio. Its publishing endpoint requires a dedicated Bearer credential; public search APIs remain read-only.
 
 References: [Workers Static Assets](https://developers.cloudflare.com/workers/static-assets/), [D1 migrations](https://developers.cloudflare.com/d1/reference/migrations/).
 
@@ -58,9 +108,21 @@ Python 3.11+ is required. No AI key is needed to browse the podcast or search im
 
 ```sh
 python3 -m venv .venv
+```
+
+```sh
 source .venv/bin/activate
+```
+
+```sh
 pip install -r requirements.txt
+```
+
+```sh
 python -m sermon_search.cli sync
+```
+
+```sh
 uvicorn sermon_search.app:app --host 127.0.0.1 --port 8000
 ```
 
@@ -70,6 +132,9 @@ Open http://localhost:8000. The current feed has 481 episodes as of October 8, 2
 
 ```sh
 python -m sermon_search.cli list
+```
+
+```sh
 python -m sermon_search.cli import EPISODE_ID path/to/transcript.json
 ```
 
@@ -92,23 +157,25 @@ Keep credentials in the backend environment. `.env.example` documents variables;
 
 ```sh
 export GROQ_API_KEY='your-groq-key'
-# Optional cheaper model; default is whisper-large-v3.
-# export GROQ_TRANSCRIPTION_MODEL='whisper-large-v3-turbo'
+```
+
+```sh
 python -m sermon_search.cli list
-# Safe configuration check. Replace EPISODE_ID with an ID from list.
+```
+
+```sh
 python -m sermon_search.cli transcribe EPISODE_ID --dry-run
 ```
 
 When ready to start processing one sermon explicitly:
 
 ```sh
-# Install ffmpeg through your system package manager; ffprobe is included.
 python -m sermon_search.cli transcribe EPISODE_ID
 ```
 
 `transcribe` downloads one sermon and splits it into lossless 16 kHz mono, 10-minute FLAC chunks below Groq's 25 MB free-tier upload limit. Groq returns timestamped segments that are imported into the existing passage index. Transcription requests use a 120-second timeout with up to two SDK retries; rate limits can still stop a run. Running the same command again resumes completed chunk responses.
 
-Checkpoints are separated by provider, model, and processing settings to avoid mixing Groq with earlier OpenAI output. They are saved under `transcripts/` next to the database (override with `TRANSCRIPT_CACHE_DIR`). Completed responses are written atomically. A failed or invalid transcript import preserves any previously indexed passages. Rerunning a successfully completed episode reimports its transcript and clears its embeddings, so run `embed` afterward. Concurrent processing of the same episode is not supported yet. Bulk jobs and weekly scheduling remain future work.
+Checkpoints are separated by provider, model, and processing settings to avoid mixing Groq with earlier OpenAI output. They are saved under `transcripts/` next to the database (override with `TRANSCRIPT_CACHE_DIR`). Completed responses are written atomically. A failed or invalid transcript import preserves any previously indexed passages. Rerunning a successfully completed episode reimports its transcript and clears its embeddings, so run `embed` afterward. Concurrent processing of the same episode is not supported yet. The n8n runner adds sequential bounded batches, a process lock, and an optional weekly schedule; see the integration guides above.
 
 Timestamp offsets use actual chunk durations. FLAC avoids MP3 padding accumulation, but model timestamps are still approximate and should be checked against the original audio. No live Groq transcription has been tested in this build; integration tests use mock responses and make no paid calls.
 
@@ -120,6 +187,9 @@ Groq transcription and search embeddings use separate credentials. Groq alone en
 
 ```sh
 export OPENAI_API_KEY='your-openai-key'
+```
+
+```sh
 python -m sermon_search.cli embed
 ```
 
@@ -136,7 +206,7 @@ Sync checks explicit speaker/preacher labels, attributed titles, and Podcast Ind
 ## Design
 
 - Workers serves the deployed frontend and read-only APIs with D1 storage. FastAPI remains available for local Python development.
-- The header uses the blue–green color logos with black/white lettering from [skylinebrand](https://github.com/bstef/skylinebrand), bundled locally under `sermon_search/static/`. Instrument Sans and Instrument Serif are self-hosted from the same repository, with their OFL licenses included. Both themes use blue, teal, and green tones derived from the logo (blue `#27aae1`, green `#39b54a`), with darker or lighter variants for readable text.
+- The header presents Skyline Echo; the footer keeps the church’s blue–green color logos with black/white lettering from [skylinebrand](https://github.com/bstef/skylinebrand), bundled locally under `sermon_search/static/`. Instrument Sans and Instrument Serif are self-hosted from the same repository, with their OFL licenses included. Both themes use blue, teal, and green tones derived from the logo (blue `#27aae1`, green `#39b54a`), with darker or lighter variants for readable text.
 - A sun/moon toggle switches light and dark themes. The initial theme follows the device preference; a user choice is saved locally and applied before the page paints.
 - SQLite FTS5 indexes transcript passages for fast keyword retrieval.
 - NumPy searches normalized precomputed embeddings; the matrix is cached until the index changes. This is appropriate to validate an archive of this size, but latency and memory must be measured with the full transcript corpus. Move vectors to an indexed vector database if the archive or concurrency outgrows this approach.
@@ -152,14 +222,23 @@ The app can run on a Workers URL or a church subdomain. Cloudflare deployment us
 
 Start with a separate site linked from the church's Watch page. An iframe is another option if the church's Nucleus page editor permits it; that integration has not been checked. A same-domain `/sermon-search` URL needs reverse-proxy support and base-path handling, which this foundation does not include.
 
-Before public use, add gateway rate limits and a concurrency/spend cap for the paid smart-search endpoint, restrict cross-site framing to approved church domains, and establish backups and a scheduled ingestion job. The foundation has no admin web endpoints: paid processing and metadata updates use local CLI commands. Pilot 5–10 real sermons before indexing the entire archive; evaluate wording, natural-language relevance, and playback timestamps on actual audio. Speaker/series filters, scheduled imports, and an admin dashboard remain future work.
+Before public use, add gateway rate limits and a concurrency/spend cap for the paid smart-search endpoint, restrict cross-site framing to approved church domains, and establish backups and a scheduled ingestion job. The protected publishing endpoint accepts completed transcripts; paid audio processing runs in the LXC or local CLI. Pilot 5–10 real sermons before indexing the entire archive; evaluate wording, natural-language relevance, and playback timestamps on actual audio. Speaker/series filters, a listening-history page, and an admin dashboard remain future work. The optional n8n weekly runner is implemented but must be deliberately enabled.
 
 ## Verify
 
 ```sh
 python -m unittest discover -s tests -v
+```
+
+```sh
 npm run check
+```
+
+```sh
 npm run test:worker
+```
+
+```sh
 npx wrangler deploy --dry-run
 ```
 
