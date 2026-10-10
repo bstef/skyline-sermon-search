@@ -520,3 +520,11 @@ header{gap:15px}
 .calendar-controls .jump-label input:focus-visible,.calendar-controls .jump-label select:focus-visible{outline:none}
 @media(max-width:900px){.calendar-controls{width:100%;grid-template-columns:auto minmax(0,1fr) minmax(0,1.6fr)}.period-navigation{width:100%;justify-content:space-between}.calendar-toolbar{gap:18px}}
 @media(max-width:480px){.calendar-controls{grid-template-columns:72px minmax(0,1fr)}.calendar-controls .date-jump-label{grid-column:1/-1}.calendar-controls .jump-label input{width:160px}}
+
+/* App resources sit below the church contact details. */
+.footer-project{display:flex;align-items:center;justify-content:space-between;gap:16px;border-top:1px solid var(--line);margin-top:24px;padding-top:18px;font-size:11px}
+.footer-project p{margin:0;font-weight:500;color:var(--muted)}
+.footer-project nav{display:flex;align-items:center;gap:24px;flex-wrap:wrap}
+.footer-project a{display:inline-flex;align-items:center;gap:6px;color:var(--primary);min-height:32px}
+.footer-project a:focus-visible{outline:2px solid var(--primary);outline-offset:4px;border-radius:3px}
+@media(max-width:520px){.footer-project{align-items:flex-start;flex-direction:column;gap:8px}.footer-project nav{gap:20px}}
