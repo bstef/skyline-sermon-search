@@ -7,7 +7,7 @@
     "dev": "npm run build && wrangler dev",
     "deploy": "node scripts/deploy.mjs",
     "check": "wrangler types && tsc --noEmit",
-    "test:worker": "node --test tests/worker.test.mjs",
+    "test:worker": "node --test tests/worker.test.mjs tests/publishing.test.mjs",
     "db:local": "wrangler d1 migrations apply DB --local"
   },
   "devDependencies": {

@@ -3,8 +3,10 @@ __pycache__/
 data/
 .env
 .DS_Store
-node_modules/
+node_modules
 dist/
 .wrangler/
 .dev.vars
 .dev.vars.*
+integrations/n8n/config.json
+integrations/n8n/skyline-echo-n8n.zip

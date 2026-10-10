@@ -1,0 +1,122 @@
+{
+  "name": "Skyline Echo \u2014 Groq Sermon Transcription (preview)",
+  "active": false,
+  "nodes": [
+    {
+      "parameters": {},
+      "id": "c460891a-82ef-4bee-b4b2-0fb425071ef3",
+      "name": "Preview or run manually",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        0,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "0 6 * * 1"
+            }
+          ]
+        }
+      },
+      "id": "62fb3ffa-6b67-41f1-a11c-e10bd4fcf6a7",
+      "name": "Weekly Monday 6 AM \u2014 enable when ready",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        0,
+        200
+      ],
+      "disabled": true
+    },
+    {
+      "parameters": {
+        "executeOnce": true,
+        "command": "cd /opt/skyline-echo && /opt/skyline-echo/.venv/bin/python -m sermon_search.n8n --config /opt/skyline-echo/integrations/n8n/config.json"
+      },
+      "id": "71bb865f-6b0d-4c38-bfbf-242b1f5d7638",
+      "name": "Sync RSS and process bounded batch",
+      "type": "n8n-nodes-base.executeCommand",
+      "typeVersion": 1,
+      "position": [
+        320,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const report = JSON.parse($input.first().json.stdout);\nreturn [{ json: report }];"
+      },
+      "id": "22518a5f-635a-4028-9e7d-a5a4399af0da",
+      "name": "Run report",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        620,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "content": "## Import does not transcribe\nInactive workflow + disabled schedule + dry_run=true config.\nInstall the companion repo and FFmpeg in the LXC first. See integrations/n8n/README.md.\nPreview fetches RSS metadata only. To process audio later, set dry_run=false.\nWeekly Mondays at 06:00 America/New_York; completed sermons are skipped.\nTranscripts and the local search index stay in /var/lib/skyline-echo; optional publishing is configured in config.json.",
+        "height": 300,
+        "width": 620
+      },
+      "id": "92dbb114-718b-4ffd-b772-15d31b79378d",
+      "name": "Setup and safety defaults",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -30,
+        -350
+      ]
+    }
+  ],
+  "connections": {
+    "Preview or run manually": {
+      "main": [
+        [
+          {
+            "node": "Sync RSS and process bounded batch",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Sync RSS and process bounded batch": {
+      "main": [
+        [
+          {
+            "node": "Run report",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Weekly Monday 6 AM \u2014 enable when ready": {
+      "main": [
+        [
+          {
+            "node": "Sync RSS and process bounded batch",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "timezone": "America/New_York",
+    "executionTimeout": 3600
+  },
+  "pinData": {},
+  "tags": []
+}

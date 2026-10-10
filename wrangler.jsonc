@@ -7,6 +7,9 @@
 		"nodejs_compat"
 	],
 	"workers_dev": true,
+	"routes": [
+		{ "pattern": "skylinechurch.app", "custom_domain": true }
+	],
 	"build": {
 		"command": "npm run build"
 	},

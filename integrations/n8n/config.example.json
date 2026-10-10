@@ -1,0 +1,13 @@
+{
+  "dry_run": true,
+  "data_dir": "/var/lib/skyline-echo",
+  "model": "whisper-large-v3-turbo",
+  "max_episodes": 1,
+  "since": null,
+  "include_archive": false,
+  "publishing": {
+    "enabled": false,
+    "dry_run": true,
+    "endpoint": "https://skylinechurch.app/api/admin/transcripts"
+  }
+}

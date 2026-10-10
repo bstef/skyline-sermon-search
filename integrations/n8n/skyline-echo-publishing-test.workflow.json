@@ -1,0 +1,89 @@
+{
+  "name": "Skyline Echo \u2014 Test publishing connection (no Groq)",
+  "active": false,
+  "nodes": [
+    {
+      "id": "538db783-a5de-4543-96f3-54a506696ae5",
+      "name": "Test manually",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        0,
+        0
+      ],
+      "parameters": {}
+    },
+    {
+      "id": "34ca29b8-a216-4f25-a82f-cffbaae9d34c",
+      "name": "Validate sample with Cloudflare",
+      "type": "n8n-nodes-base.executeCommand",
+      "typeVersion": 1,
+      "position": [
+        300,
+        0
+      ],
+      "parameters": {
+        "executeOnce": true,
+        "command": "cd /opt/skyline-echo && /opt/skyline-echo/.venv/bin/python -m sermon_search.publishing --endpoint https://skylinechurch.app/api/admin/transcripts --file integrations/n8n/sample-publication.json"
+      }
+    },
+    {
+      "id": "d6a89472-6337-47e8-b775-33e6f73035d4",
+      "name": "Publishing test result",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        600,
+        0
+      ],
+      "parameters": {
+        "jsCode": "return [{json: JSON.parse($input.first().json.stdout)}];"
+      }
+    },
+    {
+      "id": "9d0702d8-babb-41df-9807-6d9954e68ee1",
+      "name": "Test instructions",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        0,
+        -250
+      ],
+      "parameters": {
+        "content": "## Publishing test \u2014 no Groq calls\nInstall the updated ZIP and private /etc/skyline-echo-publish.token (permissions 600) on the LXC.\nExecute this workflow to validate the synthetic sample. No public search data is written.\nExpected: status=validated, dry_run=true, passages=1.",
+        "width": 620,
+        "height": 200
+      }
+    }
+  ],
+  "connections": {
+    "Test manually": {
+      "main": [
+        [
+          {
+            "node": "Validate sample with Cloudflare",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate sample with Cloudflare": {
+      "main": [
+        [
+          {
+            "node": "Publishing test result",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "timezone": "America/New_York"
+  },
+  "pinData": {},
+  "tags": []
+}

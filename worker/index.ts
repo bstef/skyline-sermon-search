@@ -1,6 +1,7 @@
 // Optional meaning search can be enabled by adding a Vectorize binding and a
 // server-side OpenAI secret. Keyword search works without either resource.
-type SearchEnv = Env & { OPENAI_API_KEY?: string; VECTOR_INDEX?: VectorizeIndex };
+import { publishTranscript } from './publishing.ts';
+type SearchEnv = Env & { OPENAI_API_KEY?: string; VECTOR_INDEX?: VectorizeIndex; TRANSCRIPT_PUBLISH_TOKEN?: string };
 type Passage = {
   id: number; episode_id: string; start: number; end: number; text: string;
   title: string; date: string; audio_url: string; speaker: string; speaker_source: string;
@@ -81,6 +82,7 @@ export default {
   async fetch(request: Request, env: SearchEnv): Promise<Response> {
     const url = new URL(request.url);
     if (!url.pathname.startsWith('/api/')) return env.ASSETS.fetch(request);
+    if (url.pathname === '/api/admin/transcripts') return publishTranscript(request, env);
     if (!['GET','HEAD'].includes(request.method)) return json({ error: 'Method not allowed' },405);
     try {
       if (url.pathname === '/api/episodes') {

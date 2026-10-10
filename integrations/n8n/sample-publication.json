@@ -1,0 +1,18 @@
+{
+  "sample": true,
+  "dry_run": true,
+  "episode": {
+    "id": "00000000000000000000",
+    "title": "TEST ONLY — publishing connection sample",
+    "date": "2026-10-09",
+    "audio_url": "https://example.com/test-only.mp3",
+    "description": "Synthetic fixture. Not a real sermon. Never publish to public search.",
+    "link": "",
+    "speaker": "",
+    "speaker_source": ""
+  },
+  "segments": [
+    {"start": 0, "end": 8, "text": "Synthetic sample to verify the Skyline Echo publishing connection."},
+    {"start": 8, "end": 16, "text": "This is a software test, not words spoken in a sermon."}
+  ]
+}

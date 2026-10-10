@@ -2,13 +2,13 @@ import { createHash } from 'node:crypto';
 import { test, before, after } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
-import { transform } from 'esbuild';
+import { build } from 'esbuild';
 import { Miniflare } from 'miniflare';
 import { search } from '../worker/index.ts';
 let mf, db;
 before(async () => {
-  const source = await readFile('worker/index.ts','utf8');
-  const { code } = await transform(source,{loader:'ts',format:'esm'});
+  const built = await build({entryPoints:['worker/index.ts'],bundle:true,write:false,format:'esm'});
+  const code = built.outputFiles[0].text;
   mf = new Miniflare({ workers: [{ config: { name:'test', compatibilityDate:'2026-10-08', manifest:{mainModule:'index.js',modules:{'index.js':{type:'esm',contents:code}}}, env:{DB:{type:'d1',id:'test-db'}} } }] });
   db = await mf.getD1Database('DB');
   const schema = await readFile('migrations/0001_schema.sql','utf8');
