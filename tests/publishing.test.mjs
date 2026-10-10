@@ -33,13 +33,12 @@ test('sample validation and omitted dry_run never write to public search',async(
   assert.equal(stats.episodes,0); assert.equal(stats.passages,0);
   assert.equal((await post({...sample,dry_run:false})).status,422);
 });
-test('bad timestamps, metadata, booleans and oversized bodies are rejected',async()=>{
+test('bad timestamps, metadata and booleans are rejected',async()=>{
   const bad=[{...sample,dry_run:'false'},{...sample,sample:'false'},
     {...sample,episode:{...sample.episode,date:'2026-02-30'}},
     {...sample,episode:{...sample.episode,audio_url:'javascript:alert(1)'}},
     {...sample,segments:[{start:8,end:10,text:'later'},{start:0,end:2,text:'earlier'}]},
-    {...sample,segments:[{start:0,end:-1,text:'bad'}]}, {...sample,segments:[]},
-    {...sample,padding:'x'.repeat(1024*1024)}];
+    {...sample,segments:[{start:0,end:-1,text:'bad'}]}, {...sample,segments:[]}];
   for(const payload of bad) assert.equal((await post(payload)).status,422);
 });
 test('publication creates a new episode, indexed timestamps and stable retries',async()=>{
@@ -65,4 +64,11 @@ test('concurrent repeated publications do not duplicate rows',async()=>{
   const responses=await Promise.all([post(payload),post(payload)]);
   assert.ok(responses.every(r=>r.status===200));
   assert.equal((await db.prepare('SELECT count(*) AS n FROM passages WHERE episode_id=?').bind(payload.episode.id).first()).n,1);
+});
+
+// Run the cancelled upload last: Miniflare shares its transport with the D1 proxy.
+test('oversized bodies are rejected before database writes',async()=>{
+  const response=await post({...sample,padding:'x'.repeat(1024*1024)});
+  assert.equal(response.status,422);
+  await response.text();
 });
