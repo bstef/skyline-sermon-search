@@ -8,6 +8,7 @@ from pathlib import Path
 import sys
 
 from . import core
+from .budget import AudioBudget, BudgetDeferred
 from .transcription import atomic_json, model_name, transcribe, transcription_plan
 
 
@@ -26,6 +27,22 @@ def run(config_path, force_preview=False):
     os.environ['GROQ_TRANSCRIPTION_MODEL'] = config.get('model', 'whisper-large-v3-turbo')
     model_name()  # Reject invalid models even when there are no pending episodes.
     preview = force_preview or config.get('dry_run', True)
+    budget_settings = config.get('audio_budget')
+    budget = None
+    if budget_settings is not None:
+        if not isinstance(budget_settings, dict):
+            raise ValueError('audio_budget must be an object.')
+        budget = AudioBudget(directory / 'groq-audio-budget.sqlite3', budget_settings)
+        os.environ['SKYLINE_AUDIO_BUDGET_DB'] = str(budget.path)
+        os.environ['SKYLINE_AUDIO_BUDGET_SETTINGS'] = json.dumps(budget_settings)
+    else:
+        os.environ.pop('SKYLINE_AUDIO_BUDGET_DB', None)
+        os.environ.pop('SKYLINE_AUDIO_BUDGET_SETTINGS', None)
+    recent_days = config.get('priority_recent_days', 0)
+    if type(recent_days) is not int or not 0 <= recent_days <= 90:
+        raise ValueError('priority_recent_days must be an integer between 0 and 90.')
+    recent_since = (date.today()-timedelta(days=recent_days)).isoformat() if recent_days else '9999-12-31'
+
     publishing = config.get('publishing', {})
     if not isinstance(publishing, dict) or any(type(publishing.get(key, default)) is not bool for key, default in [('enabled', False), ('dry_run', True)]):
         raise ValueError('publishing.enabled and publishing.dry_run must be JSON booleans.')
@@ -50,7 +67,7 @@ def run(config_path, force_preview=False):
             episodes = db.execute('''SELECT e.id FROM episodes e
                 WHERE e.date >= ? AND e.date <= ?
                 AND NOT EXISTS (SELECT 1 FROM passages p WHERE p.episode_id=e.id)
-                ORDER BY e.date, e.id LIMIT ?''', (since, date.today().isoformat(), limit)).fetchall()
+                ORDER BY CASE WHEN e.date>=? THEN 0 ELSE 1 END, e.date, e.id LIMIT ?''', (since, date.today().isoformat(), recent_since, limit)).fetchall()
         plans = [transcription_plan(e['id']) for e in episodes]
         report = {'status': 'preview' if preview else 'complete', 'dry_run': preview,
                   'synced': synced, 'since': since, 'max_episodes': limit,
@@ -59,6 +76,9 @@ def run(config_path, force_preview=False):
             for plan in plans:
                 try:
                     count = transcribe(plan['episode_id'])
+                except BudgetDeferred as deferred:
+                    report.update(status='deferred', reason=deferred.reason, retry_after_epoch=deferred.retry_at)
+                    break
                 except Exception:
                     report['status'] = 'failed'
                     report['failed_episode_id'] = plan['episode_id']
@@ -69,11 +89,13 @@ def run(config_path, force_preview=False):
             if publishing.get('enabled', False):
                 from .publishing import publish_pending
                 try:
-                    report['publishing'] = publish_pending(publishing['endpoint'], limit, publishing.get('dry_run', True))
+                    report['publishing'] = publish_pending(publishing['endpoint'], 20, publishing.get('dry_run', True))
                 except Exception:
                     report['status'] = 'publication_failed'
                     atomic_json(directory / 'last-run.json', report)
                     raise
+        if budget:
+            report['audio_budget'] = budget.summary()
         atomic_json(directory / 'last-run.json', report)
         return report
 

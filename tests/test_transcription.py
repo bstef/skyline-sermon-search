@@ -105,6 +105,39 @@ class GroqTests(unittest.TestCase):
             tx.transcribe('episode')
         self.assertEqual(core.search('trust', 'keyword')['results'][0]['start'], 603)
 
+    def test_budget_defers_before_sending_audio(self):
+        from sermon_search.budget import BudgetDeferred
+        client=self.provider()
+        with self.processing(client), patch.dict(os.environ, {'SKYLINE_AUDIO_BUDGET_DB':str(Path(self.temp.name)/'budget.sqlite3'), 'SKYLINE_AUDIO_BUDGET_SETTINGS':'{"hour_seconds":600}'}):
+            with self.assertRaises(BudgetDeferred): tx.transcribe('episode')
+        self.assertEqual(client.audio.transcriptions.create.call_count,1)
+
+    def test_invalid_response_is_retained_without_repeating_provider_call(self):
+        client=self.provider()
+        client.audio.transcriptions.create.side_effect=None
+        client.audio.transcriptions.create.return_value=SimpleNamespace(model_dump=lambda:{'segments':[{'start':-1,'end':2,'text':'Bad timestamp'}]})
+        with self.processing(client):
+            for _ in range(2):
+                with self.assertRaises(ValueError):tx.transcribe('episode')
+        self.assertEqual(client.audio.transcriptions.create.call_count,1)
+
+    def test_groq_429_starts_persistent_cooldown_and_stops_requests(self):
+        from sermon_search.budget import BudgetDeferred
+        class Limited(RuntimeError):
+            status_code=429
+        client=self.provider()
+        client.audio.transcriptions.create.side_effect=Limited('provider limited')
+        env={'SKYLINE_AUDIO_BUDGET_DB':str(Path(self.temp.name)/'budget.sqlite3'),'SKYLINE_AUDIO_BUDGET_SETTINGS':'{}'}
+        with self.processing(client), patch.dict(os.environ,env):
+            with self.assertRaisesRegex(BudgetDeferred,'groq_rate_limit'):tx.transcribe('episode')
+            with self.assertRaisesRegex(BudgetDeferred,'provider_cooldown'):tx.transcribe('episode')
+        self.assertEqual(client.audio.transcriptions.create.call_count,1)
+
+    def test_budget_mode_disables_automatic_sdk_retries(self):
+        with patch.dict(os.environ, {'SKYLINE_AUDIO_BUDGET_DB':'budget.sqlite3'}), patch('openai.OpenAI') as sdk:
+            tx.transcription_client()
+        self.assertEqual(sdk.call_args.kwargs['max_retries'],0)
+
     def test_actual_sdk_serializes_request_to_groq_with_mock_transport(self):
         def handle(request):
             self.assertEqual(request.url.host,'api.groq.com')

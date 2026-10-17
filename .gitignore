@@ -11,3 +11,4 @@ dist/
 integrations/n8n/config.json
 integrations/n8n/skyline-echo-n8n.zip
 integrations/n8n/skyline-echo/
+integrations/n8n/config.automated.json

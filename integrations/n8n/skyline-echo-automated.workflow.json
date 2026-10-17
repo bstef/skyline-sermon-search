@@ -1,0 +1,121 @@
+{
+  "name": "Skyline Echo \u2014 Automatic archive + weekly sermons (6/day)",
+  "active": false,
+  "nodes": [
+    {
+      "parameters": {},
+      "id": "0f2fd80a-9972-46a2-9c17-41afbf7d3715",
+      "name": "Run one budgeted sermon",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        0,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "0 0,4,8,12,16,20 * * *"
+            }
+          ]
+        }
+      },
+      "id": "608b9620-a0c6-442e-bc5a-831225eba673",
+      "name": "Every 4 hours \u2014 New York time",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        0,
+        200
+      ]
+    },
+    {
+      "parameters": {
+        "executeOnce": true,
+        "command": "cd /opt/skyline-echo && /opt/skyline-echo/.venv/bin/python -m sermon_search.n8n --config /opt/skyline-echo/integrations/n8n/config.automated.json"
+      },
+      "id": "7949030b-7781-4211-9fd9-8ec0bc756959",
+      "name": "Budget, transcribe and publish",
+      "type": "n8n-nodes-base.executeCommand",
+      "typeVersion": 1,
+      "position": [
+        320,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const report = JSON.parse($input.first().json.stdout);\nreturn [{ json: report }];"
+      },
+      "id": "e56ff408-e95c-40a2-bfa8-2943cae99da9",
+      "name": "Archive progress",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        620,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "content": "## Automatic archive + weekly sermons\nRuns on the LXC at 00:00, 04:00, 08:00, 12:00, 16:00, 20:00 America/New_York. No computer or browser required.\nOne sermon per run. Six distinct sermons per rolling 24h; 6 audio hours/day and 90 audio minutes/hour. Reservations survive restarts.\nNew messages get priority; saved chunks resume. Groq 429 pauses requests for 24h. Publishing retries saved transcripts.\nImport is inactive. Install config.automated.json and updated modules, preview, then Publish to enable.",
+        "height": 320,
+        "width": 620
+      },
+      "id": "501c0a30-f9b2-4785-9c2e-6e6d7072eb8e",
+      "name": "Setup and safety defaults",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -30,
+        -350
+      ]
+    }
+  ],
+  "connections": {
+    "Run one budgeted sermon": {
+      "main": [
+        [
+          {
+            "node": "Budget, transcribe and publish",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Budget, transcribe and publish": {
+      "main": [
+        [
+          {
+            "node": "Archive progress",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Every 4 hours \u2014 New York time": {
+      "main": [
+        [
+          {
+            "node": "Budget, transcribe and publish",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "timezone": "America/New_York",
+    "executionTimeout": 3600
+  },
+  "pinData": {},
+  "tags": []
+}

@@ -12,7 +12,7 @@ A sermon library and timestamped search app for Skyline Church in Bloomfield, Ne
 - Keyword search uses transcript passages. Optional contextual search requires embeddings and separate provider configuration; it falls back visibly to keywords when unavailable.
 - The n8n runner supports Groq transcription on a local LXC, bounded batches, retries, saved checkpoints, and protected publishing to Cloudflare.
 - The LXC-to-Cloudflare sample validation passed on October 9, 2026. It made no Groq calls and wrote no sample data to public search. A real-sermon trial completed on October 17, 2026: “Encounter: Repentance” (September 27, 2026; about 34 minutes) processed in 42.48 seconds, returned 277 segments, and published 46 searchable passages. Browser playback successfully sought to a returned timestamp; wording and timing still need human spot-checking against the audio.
-- The imported weekly workflow is configured for Mondays at 06:00 America/New_York, with its schedule disabled and global dry-run enabled. Installation and website deployments never start transcription.
+- The separate production archive workflow runs up to six sermons daily at four-hour intervals in America/New_York. Persistent rolling budgets cap it at six audio hours/day and 90 audio minutes/hour; new weekly episodes take priority. See the [automation guide](integrations/n8n/AUTOMATION.md). The original weekly preview remains inactive. Website deployments never start transcription.
 
 ## Features
 
@@ -28,7 +28,7 @@ See the [n8n installation guide](integrations/n8n/README.md) and [Cloudflare pub
 
 The protected `POST /api/admin/transcripts` endpoint accepts timestamped transcripts and episode metadata. Configure the Worker secret `TRANSCRIPT_PUBLISH_TOKEN` and the matching LXC file `/etc/skyline-echo-publish.token` with permissions 600. The endpoint defaults to validation, and synthetic samples cannot be committed. Secrets belong outside Git and exported workflow JSON.
 
-When explicitly enabled, publishing updates D1 and keyword search without rebuilding the site. Publication receipts prevent duplicate uploads; failed publication can retry a saved transcript without another Groq call. D1 assigns passage IDs. This publishing path does not generate semantic embeddings. The main runner’s global `dry_run: true` prevents both transcription and automatic publication.
+When explicitly enabled, publishing updates D1 and keyword search without rebuilding the site. Publication receipts prevent duplicate uploads; failed publication can retry a saved transcript without another Groq call. D1 assigns passage IDs. This publishing path does not generate semantic embeddings. A config’s global `dry_run: true` prevents both transcription and automatic publication. The production archive workflow uses its own explicitly enabled config; the original preview config stays unchanged.
 
 The separate [sample workflow](integrations/n8n/skyline-echo-publishing-test.workflow.json) validates authentication and timestamps without transcription or public writes. For the current single-sermon-at-a-time Groq setup, 80 GB and six cores provide ample headroom. Measure actual usage after the first real run and retain n8n execution-data pruning.
 
@@ -228,7 +228,7 @@ The app can run on a Workers URL or a church subdomain. Cloudflare deployment us
 
 Start with a separate site linked from the church's Watch page. An iframe is another option if the church's Nucleus page editor permits it; that integration has not been checked. A same-domain `/sermon-search` URL needs reverse-proxy support and base-path handling, which this foundation does not include.
 
-Before public use, add gateway rate limits and a concurrency/spend cap for the paid smart-search endpoint, restrict cross-site framing to approved church domains, and establish backups and a scheduled ingestion job. The protected publishing endpoint accepts completed transcripts; paid audio processing runs in the LXC or local CLI. Pilot 5–10 real sermons before indexing the entire archive; evaluate wording, natural-language relevance, and playback timestamps on actual audio. Speaker/series filters, a listening-history page, and an admin dashboard remain future work. The optional n8n weekly runner is implemented but must be deliberately enabled.
+Before public use, add gateway rate limits and a concurrency/spend cap for the paid smart-search endpoint, restrict cross-site framing to approved church domains, and establish backups and a scheduled ingestion job. The protected publishing endpoint accepts completed transcripts; paid audio processing runs in the LXC or local CLI. Pilot 5–10 real sermons before indexing the entire archive; evaluate wording, natural-language relevance, and playback timestamps on actual audio. Speaker/series filters, a listening-history page, and an admin dashboard remain future work. The budgeted archive runner is enabled separately from the original weekly preview.
 
 ## Verify
 

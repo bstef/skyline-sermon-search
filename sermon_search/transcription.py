@@ -30,7 +30,7 @@ def transcription_client():
     # Reuse the existing SDK with Groq's officially supported compatibility endpoint.
     # This client is separate from core.client(), which handles OpenAI embeddings.
     from openai import OpenAI
-    return OpenAI(api_key=key, base_url=GROQ_URL, timeout=120, max_retries=2)
+    return OpenAI(api_key=key, base_url=GROQ_URL, timeout=120, max_retries=0 if os.getenv('SKYLINE_AUDIO_BUDGET_DB') else 2)
 
 
 def transcription_plan(eid):
@@ -91,6 +91,10 @@ def transcribe(eid):
     api = transcription_client()
     cache = Path(plan['cache_directory'])
     cache.mkdir(parents=True, exist_ok=True)
+    budget = None
+    if os.getenv('SKYLINE_AUDIO_BUDGET_DB'):
+        from .budget import AudioBudget
+        budget = AudioBudget(os.environ['SKYLINE_AUDIO_BUDGET_DB'], json.loads(os.environ['SKYLINE_AUDIO_BUDGET_SETTINGS']))
     with tempfile.TemporaryDirectory() as temp:
         source = Path(temp) / 'source.audio'
         with urlopen(plan['audio_url'], timeout=60) as response, source.open('wb') as target:
@@ -112,11 +116,27 @@ def transcribe(eid):
                 result = json.loads(checkpoint.read_text())
                 cleaned = valid_segments(result)
             else:
-                with part.open('rb') as audio:
-                    result = api.audio.transcriptions.create(model=model, file=audio,
-                        language='en', response_format='verbose_json',
-                        timestamp_granularities=['segment'], temperature=0,
-                        prompt=PROMPT).model_dump()
+                raw_checkpoint = cache / (fingerprint + '.raw.json')
+                if raw_checkpoint.exists():
+                    result = json.loads(raw_checkpoint.read_text())
+                else:
+                    if budget:
+                        budget.reserve(duration, eid, model, fingerprint)
+                    try:
+                        with part.open('rb') as audio:
+                            result = api.audio.transcriptions.create(model=model, file=audio,
+                                language='en', response_format='verbose_json',
+                                timestamp_granularities=['segment'], temperature=0,
+                                prompt=PROMPT).model_dump()
+                    except Exception as error:
+                        if budget and getattr(error, 'status_code', None) == 429:
+                            from .budget import BudgetDeferred
+                            # Shared account usage may exhaust a provider limit
+                            # sooner than our ledger. Stop until the next day.
+                            budget.pause(86400)
+                            raise BudgetDeferred('groq_rate_limit', __import__('time').time()+86400) from None
+                        raise
+                    atomic_json(raw_checkpoint, result)
                 cleaned = valid_segments(result)
                 atomic_json(checkpoint, result)
             segments.extend({'start': offset+s['start'], 'end': offset+s['end'], 'text': s['text']} for s in cleaned)

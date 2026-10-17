@@ -1,0 +1,19 @@
+{
+  "dry_run": true,
+  "data_dir": "/var/lib/skyline-echo",
+  "model": "whisper-large-v3-turbo",
+  "max_episodes": 1,
+  "since": null,
+  "include_archive": true,
+  "publishing": {
+    "enabled": true,
+    "dry_run": false,
+    "endpoint": "https://skylinechurch.app/api/admin/transcripts"
+  },
+  "priority_recent_days": 14,
+  "audio_budget": {
+    "hour_seconds": 5400,
+    "day_seconds": 21600,
+    "episodes_per_day": 6
+  }
+}

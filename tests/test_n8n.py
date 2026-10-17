@@ -95,11 +95,27 @@ class N8nRunnerTests(unittest.TestCase):
             self.run_config(publishing={'enabled': True, 'dry_run': False, 'endpoint': 'https://example.com/api'})
         publish.assert_not_called()
 
+    def test_budget_deferred_is_saved_and_publication_still_retries(self):
+        from sermon_search.budget import BudgetDeferred
+        with patch.object(n8n,'transcribe',side_effect=BudgetDeferred('day_audio_budget',12345)), patch('sermon_search.publishing.publish_pending',return_value=[]) as publish:
+            report=self.run_config(dry_run=False,audio_budget={},publishing={'enabled':True,'dry_run':False,'endpoint':'https://example.com/api'})
+        self.assertEqual(report['status'],'deferred')
+        self.assertEqual(report['retry_after_epoch'],12345)
+        self.assertEqual(json.loads((self.directory/'last-run.json').read_text())['reason'],'day_audio_budget')
+        publish.assert_called_once()
+
+    def test_recent_sermons_take_priority_over_archive(self):
+        from datetime import date
+        with core.database() as db:
+            db.execute('INSERT INTO episodes(id,title,date,audio_url,description,link) VALUES(?,?,?,?,?,?)',('new','New',date.today().isoformat(),'https://example.com/audio.mp3','',''))
+        report=self.run_config(include_archive=True,priority_recent_days=14)
+        self.assertEqual(report['selected'][0]['episode_id'],'new')
+
     def test_saved_transcripts_publish_when_no_new_sermons_are_selected(self):
         with patch.object(n8n, 'transcribe') as paid, patch('sermon_search.publishing.publish_pending', return_value=[{'status':'published'}]) as publish:
             report = self.run_config(since='2999-01-01', dry_run=False, publishing={'enabled':True,'dry_run':False,'endpoint':'https://example.com/api'})
         paid.assert_not_called()
-        publish.assert_called_once_with('https://example.com/api',1,False)
+        publish.assert_called_once_with('https://example.com/api',20,False)
         self.assertEqual(report['publishing'][0]['status'],'published')
 
 

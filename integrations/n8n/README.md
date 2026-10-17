@@ -1,3 +1,5 @@
+> For the active six-runs-per-day archive workflow, see [Automatic processing](AUTOMATION.md). The older weekly template below remains a safe inactive preview.
+
 # Skyline Echo: n8n + Groq on a Proxmox LXC
 
 n8n imports **workflows**, so this package provides an importable JSON workflow and a small Python runner. It is for n8n installed directly in a Debian/Ubuntu LXC. No GPU is needed: FFmpeg processes audio locally, then Groq receives the audio chunks for transcription.
