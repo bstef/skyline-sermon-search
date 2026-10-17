@@ -60,7 +60,9 @@ The LXC keeps a separate `transcripts/<episode-id>/publication.json` receipt. If
 - Python tests: separate publication receipts, retrying failed publication, validation not marking publication complete, using original transcripts after changing the transcription model, destination changes, HTTPS/redirect checks and missing credentials.
 - Live Cloudflare sample: authenticated validation returned `validated`, invalid credentials returned 401, sample writes and invalid timestamps returned 422. Public stats remained 481 episodes and zero indexed transcripts. No Groq API was called.
 
-The final LXC-to-Cloudflare authenticated test requires the private token and updated modules to be installed on the LXC first. The Mac-to-Cloudflare sample test does not prove those files have been installed there.
+The LXC-to-Cloudflare sample test passed after installing the updated modules and token. On October 17, 2026, a real Groq Turbo trial transcribed the September 27 sermon in 42.48 seconds, returned 277 segments, and published 46 passages. Live keyword search and browser audio seeking worked. Human spot-checking of wording and timestamp accuracy remains necessary. The weekly workflow remains inactive and its main runner config remains in dry-run.
+
+The trial exposed missing FLAC duration metadata. The corrected runner counts decoded 16 kHz audio samples for each chunk rather than trusting container duration; install the latest `sermon_search/transcription.py` when updating an older LXC runner.
 
 ## Rotation
 

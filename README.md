@@ -11,7 +11,7 @@ A sermon library and timestamped search app for Skyline Church in Bloomfield, Ne
 - The live app runs on Cloudflare Workers with D1. The initial archive contains 481 episode records; audio can be played before transcription.
 - Keyword search uses transcript passages. Optional contextual search requires embeddings and separate provider configuration; it falls back visibly to keywords when unavailable.
 - The n8n runner supports Groq transcription on a local LXC, bounded batches, retries, saved checkpoints, and protected publishing to Cloudflare.
-- The LXC-to-Cloudflare sample validation passed on October 9, 2026. It made no Groq calls and wrote no sample data to public search. A real-sermon transcription trial is still pending.
+- The LXC-to-Cloudflare sample validation passed on October 9, 2026. It made no Groq calls and wrote no sample data to public search. A real-sermon trial completed on October 17, 2026: “Encounter: Repentance” (September 27, 2026; about 34 minutes) processed in 42.48 seconds, returned 277 segments, and published 46 searchable passages. Browser playback successfully sought to a returned timestamp; wording and timing still need human spot-checking against the audio.
 - The imported weekly workflow is configured for Mondays at 06:00 America/New_York, with its schedule disabled and global dry-run enabled. Installation and website deployments never start transcription.
 
 ## Features
@@ -183,7 +183,7 @@ python -m sermon_search.cli transcribe EPISODE_ID
 
 Checkpoints are separated by provider, model, and processing settings to avoid mixing Groq with earlier OpenAI output. They are saved under `transcripts/` next to the database (override with `TRANSCRIPT_CACHE_DIR`). Completed responses are written atomically. A failed or invalid transcript import preserves any previously indexed passages. Rerunning a successfully completed episode reimports its transcript and clears its embeddings, so run `embed` afterward. Concurrent processing of the same episode is not supported yet. The n8n runner adds sequential bounded batches, a process lock, and an optional weekly schedule; see the integration guides above.
 
-Timestamp offsets use actual chunk durations. FLAC avoids MP3 padding accumulation, but model timestamps are still approximate and should be checked against the original audio. No live Groq transcription has been tested in this build; integration tests use mock responses and make no paid calls.
+Timestamp offsets use actual chunk durations. FLAC avoids MP3 padding accumulation, but model timestamps are still approximate and should be checked against the original audio. The first live Groq Turbo trial completed on October 17, 2026. Automated integration tests continue to use mock responses and make no provider calls. Chunk offsets use decoded sample counts because segmented FLAC container duration can be missing or retain the original file duration.
 
 References: [Groq speech-to-text and timestamps](https://console.groq.com/docs/speech-to-text), [SDK compatibility endpoint](https://console.groq.com/docs/openai).
 

@@ -69,6 +69,19 @@ def valid_segments(result):
     return cleaned
 
 
+def chunk_duration(path):
+    """Count decoded samples: segmented FLAC duration metadata is unreliable."""
+    frames = json.loads(subprocess.check_output(['ffprobe', '-v', 'error',
+        '-select_streams', 'a:0', '-show_frames', '-show_entries', 'frame=nb_samples',
+        '-of', 'json', str(path)]))
+    # The splitter explicitly resamples every part to mono 16 kHz. Container
+    # duration can be N/A or retain the original file's duration on the last part.
+    samples = sum(int(frame.get('nb_samples', 0)) for frame in frames.get('frames', []))
+    if samples <= 0:
+        raise RuntimeError('Unable to determine the audio chunk duration.')
+    return samples / 16000
+
+
 def transcribe(eid):
     plan = transcription_plan(eid)
     if not plan['ffmpeg_available'] or not plan['ffprobe_available']:
@@ -92,8 +105,7 @@ def transcribe(eid):
             raise RuntimeError('Audio splitting produced no files.')
         segments, offset = [], 0.0
         for part in parts:
-            duration = float(subprocess.check_output(['ffprobe', '-v', 'error', '-show_entries',
-                'format=duration', '-of', 'default=noprint_wrappers=1:nokey=1', str(part)]))
+            duration = chunk_duration(part)
             fingerprint = hashlib.sha256(part.read_bytes()).hexdigest()
             checkpoint = cache / (fingerprint + '.json')
             if checkpoint.exists():

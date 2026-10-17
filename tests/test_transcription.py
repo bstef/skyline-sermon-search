@@ -65,7 +65,7 @@ class GroqTests(unittest.TestCase):
         stack.enter_context(patch.object(tx.shutil,'which',return_value='/fake/tool'))
         stack.enter_context(patch.object(tx,'urlopen',side_effect=lambda *a,**kw:io.BytesIO(b'fake original audio')))
         stack.enter_context(patch.object(tx.subprocess,'run',side_effect=self.fake_split))
-        stack.enter_context(patch.object(tx.subprocess,'check_output',return_value=b'600.0'))
+        stack.enter_context(patch.object(tx.subprocess,'check_output',return_value=b'{"frames":[{"nb_samples":9600000}]}'))
         return stack
     def test_offsets_model_parameters_and_cached_resume(self):
         client=self.provider()
@@ -89,6 +89,22 @@ class GroqTests(unittest.TestCase):
         with self.processing(resumed):tx.transcribe('episode')
         self.assertEqual(resumed.audio.transcriptions.create.call_count,1)
         self.assertEqual(core.search('original','keyword')['results'],[])
+    def test_chunk_duration_uses_samples_when_flac_header_has_no_duration(self):
+        with patch.object(tx.subprocess, 'check_output', return_value=b'{"frames":[{"nb_samples":16000},{"nb_samples":8000}]}') as probe:
+            self.assertEqual(tx.chunk_duration(Path('part.flac')), 1.5)
+        self.assertIn('-show_frames', probe.call_args.args[0])
+
+    def test_chunk_duration_rejects_missing_samples(self):
+        with patch.object(tx.subprocess, 'check_output', return_value=b'{"frames":[]}'):
+            with self.assertRaisesRegex(RuntimeError, 'duration'):
+                tx.chunk_duration(Path('part.flac'))
+
+    def test_missing_duration_keeps_cross_chunk_search_timestamps(self):
+        client = self.provider()
+        with self.processing(client), patch.object(tx.subprocess, 'check_output', return_value=b'{"frames":[{"nb_samples":9600000}]}'):
+            tx.transcribe('episode')
+        self.assertEqual(core.search('trust', 'keyword')['results'][0]['start'], 603)
+
     def test_actual_sdk_serializes_request_to_groq_with_mock_transport(self):
         def handle(request):
             self.assertEqual(request.url.host,'api.groq.com')
