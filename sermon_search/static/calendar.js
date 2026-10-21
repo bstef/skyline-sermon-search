@@ -21,11 +21,12 @@ const linkedMonth = /^\d{4}-\d{2}$/.test(params.get('month') || '') ? fromKey(`$
 if(view==='month' && linkedMonth)focus=linkedMonth;
 function rowsOn(key) { return byDate.get(key) || []; }
 function displayTitle(e) { return e.title.replace(/^\d{1,2}\/\d{1,2}\/\d{2,4}\s*[-–:]\s*/, ''); }
+function statusBadge(done) { const b=make('p',undefined,`status-badge ${done?'is-done':'is-pending'}`); b.append(make('span',done?'✓':'◷','status-icon'),document.createTextNode(done?'Transcript searchable':'Audio available · transcript pending')); return b; }
 function sermonCard(e) {
   const card=make('article',undefined,'calendar-sermon');
   card.dataset.sermonId=String(e.id); card.id=`sermon-${e.id}`; card.tabIndex=-1;
   const body=make('div');
-  body.append(make('h3',displayTitle(e)),make('p',e.passages ? 'Transcript searchable' : 'Audio available · transcript pending','meta'));
+  body.append(make('h3',displayTitle(e)),statusBadge(!!e.passages));
   if(e.speaker) body.append(make('p',`Speaker: ${e.speaker}`,'meta speaker-credit'));
   if(e.description) {
     const details=make('details'); details.append(make('summary','About this message'),make('p',e.description,'sermon-description')); body.append(details);
