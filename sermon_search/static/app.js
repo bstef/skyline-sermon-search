@@ -1,10 +1,16 @@
 const $ = id => document.getElementById(id);
-let library = [], visible = 12, controller;
+let library = [], visible = 12, controller, statusFilter = 'all';
+const filtered = () => library.filter(e => statusFilter === 'all' || (statusFilter === 'done' ? e.passages : !e.passages));
+function badge(done) { const b = node('span', undefined, `status-badge ${done ? 'is-done' : 'is-pending'}`); b.append(node('span', done ? '✓' : '◷', 'status-icon'), document.createTextNode(done ? 'Transcript searchable' : 'Audio available · transcript pending')); return b; }
+function updateFilter() {
+  const done = library.filter(e => e.passages).length, counts = {all: library.length, done, pending: library.length - done};
+  document.querySelectorAll('[data-status]').forEach(b => { const k = b.dataset.status; b.querySelector('.count').textContent = counts[k]; b.setAttribute('aria-pressed', String(k === statusFilter)); });
+}
 const clock = s => `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, '0')}`;
 function node(tag, text, cls) { const e = document.createElement(tag); if(text !== undefined) e.textContent = text; if(cls) e.className = cls; return e; }
 async function api(url, signal) { const r = await fetch(url, {signal}); if(!r.ok) throw new Error('The library could not be loaded. Please try again.'); return r.json(); }
 const listen = window.SkylinePlayer.listen;
-function render(rows, searching=false) {
+function render(rows, searching=false, filter='all') {
   $('results').replaceChildren();
   rows.forEach(e => {
     const article = node('article', undefined, 'card');
@@ -26,20 +32,22 @@ function render(rows, searching=false) {
     const body = node('div'); body.append(node('h3',e.title),node('div',searching ? `Sermon passage · ${clock(e.start)}–${clock(e.end)}` : 'Skyline Church Podcast', 'meta'));
     if(e.speaker) body.append(node('div', `Speaker: ${e.speaker}`, 'meta speaker-credit'));
     if(searching) body.append(node('p',e.text,'excerpt'));
-    else body.append(node('span',e.passages ? 'Transcript searchable' : 'Audio available · transcript pending','tag'));
+    else body.append(badge(!!e.passages));
+    article.classList.add(e.passages ? 'status-done' : 'status-pending');
     const play = node('button', searching ? `▶ Listen at ${clock(e.start)}` : '▶ Listen');
     play.addEventListener('click',()=>listen(e,searching ? e.start : 0,article.id));
     article.append(tile,body,play); $('results').append(article);
   });
   window.SkylinePlayer.refresh();
-  if(!rows.length) $('results').append(node('div',searching ? 'No searchable passages found. Try another phrase. Sermons with pending transcripts cannot appear in search yet.' : 'No sermons imported yet. Run the podcast sync command to load the library.','empty'));
+  if(!rows.length) $('results').append(node('div',searching ? 'No searchable passages found. Try another phrase. Sermons with pending transcripts cannot appear in search yet.' : (filter === 'done' ? 'No transcribed sermons yet.' : filter === 'pending' ? 'Every sermon is transcribed.' : 'No sermons imported yet. Run the podcast sync command to load the library.'),'empty'));
 }
 function browse() {
   if(controller) controller.abort();
   $('query').value = ''; $('clear-search').hidden = true;
   $('section-title').textContent = 'The sermon library'; $('browse').hidden = true; $('notice').hidden = true; $('status').textContent = '';
-  render(library.slice(0,visible)); $('more').hidden = visible >= library.length;
-  const url = new URL(location.href); url.search = ''; history.replaceState(null,'',url);
+  $('status-filter').hidden = false; updateFilter();
+  const rows = filtered(); render(rows.slice(0,visible),false,statusFilter); $('more').hidden = visible >= rows.length;
+  const url = new URL(location.href); url.search = ''; if(statusFilter!=='all') url.searchParams.set('status',statusFilter); history.replaceState(null,'',url);
 }
 async function search() {
   const q = $('query').value.trim(); if(!q) { browse(); return; }
@@ -47,7 +55,7 @@ async function search() {
   if(controller) controller.abort(); controller = new AbortController();
   const signal = controller.signal;
   const mode = document.querySelector('input[name=mode]:checked').value;
-  $('section-title').textContent = 'Search results'; $('status').textContent = 'Searching the sermon archive…'; $('notice').hidden = true; $('more').hidden = true; $('browse').hidden = false;
+  $('section-title').textContent = 'Search results'; $('status-filter').hidden = true; $('status').textContent = 'Searching the sermon archive…'; $('notice').hidden = true; $('more').hidden = true; $('browse').hidden = false;
   $('results').replaceChildren();
   try {
     const data = await api(`/api/search?q=${encodeURIComponent(q)}&mode=${mode}`,signal);
@@ -62,7 +70,8 @@ window.SkylinePlayer.registerReveal((episode, entryId) => {
   if (document.getElementById(entryId)) return;
   const id = episode.episode_id || episode.id;
   if ([...document.querySelectorAll('[data-sermon-id]')].some(row => row.dataset.sermonId === String(id))) return;
-  const index = library.findIndex(e => e.id === id);
+  let index = filtered().findIndex(e => e.id === id);
+  if (index < 0) { statusFilter = 'all'; index = library.findIndex(e => e.id === id); }
   if (index >= 0) { visible = Math.max(visible, index + 1); browse(); }
 });
 $('search-form').addEventListener('submit',e=>{ e.preventDefault(); search(); });
@@ -73,11 +82,14 @@ $('query').addEventListener('input',()=>{
 });
 $('clear-search').addEventListener('click',()=>{ browse(); $('query').focus(); });
 $('browse').addEventListener('click',()=>{ browse(); $('query').focus(); });
-$('more').addEventListener('click',()=>{visible+=12;render(library.slice(0,visible));$('more').hidden=visible>=library.length;});
+$('more').addEventListener('click',()=>{visible+=12;const rows=filtered();render(rows.slice(0,visible),false,statusFilter);$('more').hidden=visible>=rows.length;});
+document.querySelectorAll('[data-status]').forEach(b=>b.addEventListener('click',()=>{ statusFilter=b.dataset.status; visible=12; try{ localStorage.setItem('skyline-status-filter',statusFilter); }catch{} const u=new URL(location.href); if(statusFilter==='all')u.searchParams.delete('status'); else u.searchParams.set('status',statusFilter); history.replaceState(null,'',u); browse(); }));
 (async()=>{
   try {
     const [stats, episodes] = await Promise.all([api('/api/stats'),api('/api/episodes')]);
-    library = episodes; $('coverage').textContent = `${stats.episodes} sermons · ${stats.indexed} transcribed`;
+    library = episodes;
+    const wanted = new URLSearchParams(location.search).get('status'); if(['done','pending'].includes(wanted)) statusFilter = wanted;
+    $('coverage').textContent = `${stats.episodes} sermons · ${stats.indexed} transcribed`;
     const params = new URLSearchParams(location.search);
     if(params.has('q')) { $('query').value=params.get('q'); if(params.get('mode')==='keyword') document.querySelector('[value=keyword]').checked=true; await search(); }
     else browse();
