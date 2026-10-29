@@ -118,3 +118,7 @@ cd /opt/skyline-echo
 Runner, publication and existing Groq transcription tests passed using mocked data/API transport. No real sermon transcription was started. Import and live execution still need verification on your n8n instance.
 
 References: [n8n workflow import](https://docs.n8n.io/build/manage-workflows/export-and-import.md), [Execute Command](https://docs.n8n.io/integrations/builtin/core-nodes/n8n-nodes-base.executecommand/), [Schedule Trigger](https://docs.n8n.io/integrations/builtin/core-nodes/n8n-nodes-base.scheduletrigger/), [Groq speech-to-text](https://console.groq.com/docs/speech-to-text).
+
+## Daily report workflow recovery
+
+A [sanitized one-time backup and restore guide](backup/README.md) for the daily transcription and cost email workflow is available in [`backup/`](backup/). The template imports inactive and requires your sender/recipient addresses, application URLs and a Resend credential. Keep the exact deployment export, server databases and secrets in separate private storage. No recurring backup job is installed.

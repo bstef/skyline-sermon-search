@@ -1,0 +1,3 @@
+b960e11acbb59f39b2a57d7ba94a5bca90955260aa6a715b117fedc601b5ebf5  README.md
+35fc26ae7b185b4f3c279585fef60d92b0fccbba0043d6fba20d5d6074df30b0  build-daily-ledger-report.py
+2080450aca48fdcafcf06cdc012b89924965970594fafb0493a8179fe1262f2f  daily-report.workflow.json
